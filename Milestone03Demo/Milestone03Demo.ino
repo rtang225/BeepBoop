@@ -1,12 +1,4 @@
-/*
- MSE 2202 Milestone 03 drive system video demo code
- Language: Arduino
- Authors: Andrew Wong
- */
-
-// Uncomment keywords to enable debugging output
-// #define DEBUG_DRIVE_SPEED    1
-#define DEBUG_ENCODER_COUNT 1
+#define DEBUG_ENCODER_COUNT  1
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
