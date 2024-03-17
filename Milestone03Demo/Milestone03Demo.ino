@@ -19,12 +19,8 @@ void setTarget(int dir, long pos, double dist);  // sets encoder position target
 #define ENCODER_RIGHT_B 12     // right encoder B signal is connected to pin 20 GPIO12 (J12)
 #define MODE_BUTTON 0          // GPIO0  pin 27 for Push Button 1
 #define MOTOR_ENABLE_SWITCH 3  // DIP Switch S1-1 pulls Digital pin D3 to ground when on, connected to pin 15 GPIO3 (J3)
-// #define POT_R1 1               // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED 21       // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT 1  // number of SMART LEDs in use
-// #define IR_DETECTOR 14         // GPIO14 pin 17 (J14) IR detector input
-// #define SHOULDER_SERVO 41      // GPIO41 pin 34 (J41) Servo 1
-// #define CLAW_SERVO 42          // GPIO42 pin 35 (J42) Servo 2
 
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
@@ -105,8 +101,6 @@ void setup() {
 
   // Set up motors and encoders
   Bot.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
-  // Bot.servoBegin("S1", CLAW_SERVO);                                                // set up claw servo
-  // Bot.servoBegin("S2", SHOULDER_SERVO);                                            // set up shoulder servo
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Bot.iLeftMotorRunning);      // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);  // set up right encoder
 
@@ -183,7 +177,8 @@ void loop() {
 
     // modes
     // 0 = Default after power up/reset. Robot is stopped.
-    // 1 = Press mode button once to enter.        Run robot
+    // 1 = Press mode button once to enter. Run robot
+
     switch (robotModeIndex) {
       case 0:  // Robot stopped
         Bot.Stop("D1");
@@ -196,7 +191,6 @@ void loop() {
       case 1:              // Run robot
         if (timeUp3sec) {  // pause for 3 sec before running case 1 code
           // Read pot to update drive motor speed
-          // pot = analogRead(POT_R1);
           leftDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
           rightDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
 #ifdef DEBUG_DRIVE_SPEED
@@ -224,7 +218,6 @@ void loop() {
           if (motorsEnabled) {  // run motors only if enabled
             if (timeUp2sec) {
               RightEncoder.getEncoderRawCount();  // read right encoder count
-              // Serial.println(driveIndex);
               switch (driveIndex) {  // cycle through drive states
                 case 0:              // Stop
                   Bot.Stop("D1");    // drive ID
@@ -235,7 +228,6 @@ void loop() {
 
                 case 1:                                                // Drive forward
                   Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
 
                   if (RightEncoder.lRawEncoderCount >= target) {
                     setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
