@@ -244,68 +244,11 @@ void loop() {
                   if (RightEncoder.lRawEncoderCount <= target) {
                     driveDistance -= 10;
                     setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: drive forward
+                    driveIndex = 1;                                                // next state: drive forward
                   }
                   break;
 
                 case 3:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
-                  }
-                  break;
-
-                case 4:                                             // Turn left
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance -= 10;
-                    setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: drive forward
-                  }
-                  break;
-
-                case 5:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
-                  }
-                  break;
-
-                case 6:                                             // Turn left
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance -= 10;
-                    setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: drive forward
-                  }
-                  break;
-
-                case 7:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
-                  }
-                  break;
-
-                case 8:                                             // Turn left
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance -= 10;
-                    setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: stop robot, exit drive mode
-                  }
-                  break;
-
-                case 9:                                                // Drive forward
                   Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount >= target) {
