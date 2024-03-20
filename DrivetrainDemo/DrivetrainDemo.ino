@@ -1,4 +1,4 @@
-// #define DEBUG_ENCODER_COUNT 1
+#define DEBUG_ENCODER_COUNT 1
 // #define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
@@ -64,8 +64,8 @@ unsigned long previousMicros;         // last microsecond count
 unsigned long currentMicros;          // current microsecond count
 double target;                        // target encoder count to keep track of distance travelled
 unsigned long prevTime;               // Get the current time in milliseconds
-float driveDistance = 25;             // Forward/backward drive distance
-float turningDistance = 8.5;          // Turning distance counter
+float driveDistance = 80;            // Forward/backward drive distance
+float turningDistance = 8.8;          // Turning distance counter
 int driveCounter = 0;                 // Counter for drive circles
 
 // Declare SK6812 SMART LED object
@@ -242,7 +242,7 @@ void loop() {
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance += 25;
+                    driveDistance -= 10;
                     setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                     driveIndex++;                                                // next state: drive forward
                   }
@@ -261,7 +261,7 @@ void loop() {
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance += 25;
+                    driveDistance -= 10;
                     setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                     driveIndex++;                                                // next state: drive forward
                   }
@@ -280,7 +280,7 @@ void loop() {
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance += 25;
+                    driveDistance -= 10;
                     setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                     driveIndex++;                                                // next state: drive forward
                   }
@@ -299,7 +299,7 @@ void loop() {
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance += 25;
+                    driveDistance -= 10;
                     setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                     driveIndex++;                                                // next state: stop robot, exit drive mode
                   }
@@ -309,9 +309,9 @@ void loop() {
                   Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount >= target) {
-                    if (driveCounter < 3) {
+                    if (driveCounter < 1) {
                       driveCounter++;
-                      driveDistance += 25;
+                      driveDistance -= 10;
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                       driveIndex = 1;
                     } else {
