@@ -313,7 +313,7 @@ void loop() {
                       driveCounter++;
                       driveDistance -= 10;
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                      driveIndex = 1;
+                      driveIndex = 0;
                     } else {
                       robotModeIndex = 0;
                     }
