@@ -64,7 +64,7 @@ unsigned long previousMicros;         // last microsecond count
 unsigned long currentMicros;          // current microsecond count
 double target;                        // target encoder count to keep track of distance travelled
 unsigned long prevTime;               // Get the current time in milliseconds
-float driveDistance = 80;            // Forward/backward drive distance
+float driveDistance = 120;            // Forward/backward drive distance
 float turningDistance = 8.8;          // Turning distance counter
 int driveCounter = 0;                 // Counter for drive circles
 
