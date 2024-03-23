@@ -27,10 +27,10 @@ const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 
-const int cGateServoOpen = 1000;     // Value for open position of claw
-const int cGateServoClosed = 1500;   // Value for closed position of claw
-const int cSorterServoRight = 2200;  // Value for shoulder of arm fully up
-const int cSorterServoLeft = 1100;   // Value for shoulder of arm fully down
+const int cGateServoOpen = 1700;     // Value for open position of claw
+const int cGateServoClosed = 1000;   // Value for closed position of claw
+const int cSorterServoRight = 1600;  // Value for shoulder of arm fully up
+const int cSorterServoLeft = 1150;   // Value for shoulder of arm fully down
 
 //
 //=====================================================================================================================
@@ -92,8 +92,8 @@ void loop() {
 #ifdef PRINT_COLOUR
     Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
 #endif
-    if (g >= 50) {                             // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
-      Bot.ToPosition("S2", cSorterServoLeft);  // Moves servo so stone slides into collection
+    if ((c >= 77 && c <= 81) || (g > 33 || r < 30 || b <= 30)) {                  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+      Bot.ToPosition("S2", cSorterServoLeft);                                    // Moves servo so stone slides into collection
     } else {
       Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
     }
