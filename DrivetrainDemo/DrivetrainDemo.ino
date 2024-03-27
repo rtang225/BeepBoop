@@ -121,13 +121,15 @@ void setup() {
   Bot.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Bot.iLeftMotorRunning);       // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);   // set up right encoder
-  leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
-  rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
+  // leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
+  // rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
 
   // Set up wheel motors and encoders
-  Wheel.driveBegin("D1", LEFT_MOTOR_2A, LEFT_MOTOR_2B, RIGHT_MOTOR_2A, RIGHT_MOTOR_2B);  // set up motors as Drive 2
+  Wheel.driveBegin("D2", LEFT_MOTOR_2A, LEFT_MOTOR_2B, RIGHT_MOTOR_2A, RIGHT_MOTOR_2B);  // set up motors as Drive 2
   LeftEncoder2.Begin(ENCODER_LEFT_2A, ENCODER_LEFT_2B, &Wheel.iLeftMotorRunning);        // set up left encoder
   RightEncoder2.Begin(ENCODER_RIGHT_2A, ENCODER_RIGHT_2B, &Wheel.iRightMotorRunning);    // set up right encoder
+  wheelLDriveSpeed = cMaxPWM - cLeftAdjust;
+  wheelLDriveSpeed = cMaxPWM - cRightAdjust;
 
   // Set up SmartLED
   SmartLEDs.begin();                                     // initialize smart LEDs object (REQUIRED)
@@ -207,6 +209,7 @@ void loop() {
     switch (robotModeIndex) {
       case 0:  // Robot stopped
         Bot.Stop("D1");
+        Wheel.Stop("D2");
         // clear encoder counts
         LeftEncoder.clearEncoder();
         RightEncoder.clearEncoder();
@@ -218,12 +221,10 @@ void loop() {
 
       case 1:              // Run robot
         if (timeUp3sec) {  // pause for 3 sec before running case 1 code
-                           // Read pot to update drive motor speed
+          // Read pot to update drive motor speed
           pot = analogRead(POT_R1);
           // wheelLDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
           // wheelRDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
-          // wheelLDriveSpeed = cMaxPWM;
-          // wheelLDriveSpeed = cMaxPWM;
           leftDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
           rightDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
 #ifdef DEBUG_DRIVE_SPEED
@@ -252,8 +253,8 @@ void loop() {
             Serial.print("\n");
           }
 #endif
-          if (motorsEnabled) {                                        // run motors only if enabled
-            // Wheel.Forward("D1", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
+          if (motorsEnabled) {  // run motors only if enabled
+            // Wheel.Forward("D2", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
             if (timeUp2sec) {
               RightEncoder.getEncoderRawCount();  // read right encoder count
               switch (driveIndex) {               // cycle through drive states
@@ -359,6 +360,7 @@ void loop() {
           }
         } else {  // stop when motors are disabled
           Bot.Stop("D1");
+          Wheel.Stop("D2");
         }
         break;
     }
