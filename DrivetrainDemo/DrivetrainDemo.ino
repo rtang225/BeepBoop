@@ -25,13 +25,13 @@ void setTarget(int dir, long pos, double dist);  // sets encoder position target
 #define SMART_LED_COUNT 1      // number of SMART LEDs in use
 
 // Port pin constants for Picker Upper Wheel
-#define LEFT_MOTOR_2A 18   // GPIO35 pin 28 (J35) Motor 1 A
-#define LEFT_MOTOR_2B 17   // GPIO36 pin 29 (J36) Motor 1 B
-#define RIGHT_MOTOR_2A 16  // GPIO37 pin 30 (J37) Motor 2 A
-#define RIGHT_MOTOR_2B 15  // GPIO38 pin 31 (J38) Motor 2 B
-#define ENCODER_LEFT_2A 4  // left encoder A signal is connected to pin 8 GPIO15 (J15)
+#define LEFT_MOTOR_2A 15   // GPIO15 (J15) Motor 1 A
+#define LEFT_MOTOR_2B 16   // GPIO16 (J16) Motor 1 B
+#define RIGHT_MOTOR_2A 17  // GPIO17 (J17) Motor 2 A
+#define RIGHT_MOTOR_2B 18  // GPIO18 (J18) Motor 2 B
+#define ENCODER_LEFT_2A 4  // left encoder A signal is connected to
 #define ENCODER_LEFT_2B 5
-#define ENCODER_RIGHT_2A 6  // left encoder B signal is connected to pin 8 GPIO16 (J16)
+#define ENCODER_RIGHT_2A 6  // left encoder B signal is connected to
 #define ENCODER_RIGHT_2B 7
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
@@ -120,8 +120,8 @@ void setup() {
   Bot.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Bot.iLeftMotorRunning);       // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);   // set up right encoder
-  leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
-  rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
+  // leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
+  // rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
 
   // Set up wheel motors and encoders
   Wheel.driveBegin("D1", LEFT_MOTOR_2A, LEFT_MOTOR_2B, RIGHT_MOTOR_2A, RIGHT_MOTOR_2B);  // set up motors as Drive 1
@@ -217,8 +217,10 @@ void loop() {
         if (timeUp3sec) {  // pause for 3 sec before running case 1 code
                            // Read pot to update drive motor speed
           pot = analogRead(POT_R1);
-          wheelLDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
-          wheelRDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
+          //           wheelLDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
+          //           wheelRDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
+          leftDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
+          rightDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
 #ifdef DEBUG_DRIVE_SPEED
           Serial.print(F("Left Drive Speed: Pot R1 = "));
           Serial.print(pot);
@@ -243,8 +245,8 @@ void loop() {
             Serial.print("\n");
           }
 #endif
-          if (motorsEnabled) {                                        // run motors only if enabled
-            Wheel.Forward("D1", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
+          if (motorsEnabled) {  // run motors only if enabled
+            // Wheel.Forward("D1", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
             if (timeUp2sec) {
               RightEncoder.getEncoderRawCount();  // read right encoder count
               switch (driveIndex) {               // cycle through drive states
@@ -335,7 +337,7 @@ void loop() {
                   Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount >= target) {
-                    if (driveCounter < 1) {
+                    if (driveCounter < 100) {
                       driveCounter++;
                       driveDistance -= 10;
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
