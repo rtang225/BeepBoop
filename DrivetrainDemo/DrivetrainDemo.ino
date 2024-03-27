@@ -254,7 +254,7 @@ void loop() {
           }
 #endif
           if (motorsEnabled) {  // run motors only if enabled
-            // Wheel.Forward("D2", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
+            Wheel.Forward("D2", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
             if (timeUp2sec) {
               RightEncoder.getEncoderRawCount();  // read right encoder count
               switch (driveIndex) {               // cycle through drive states
