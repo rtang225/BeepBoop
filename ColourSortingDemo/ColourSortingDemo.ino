@@ -27,10 +27,14 @@ const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 
-const int cGateServoOpen = 1700;     // Value for open position of claw
-const int cGateServoClosed = 1000;   // Value for closed position of claw
-const int cSorterServoRight = 1600;  // Value for shoulder of arm fully up
-const int cSorterServoLeft = 1150;   // Value for shoulder of arm fully down
+const int cGateServoOpen = 1700;      // Value for open position of claw
+const int cGateServoClosed = 1000;    // Value for closed position of claw
+const int cSorterServoRight = 1600;   // Value for shoulder of arm fully up
+const int cSorterServoMiddle = 1370;  // Value for shoulder of arm fully up
+const int cSorterServoLeft = 1150;    // Value for shoulder of arm fully down
+
+bool flag = true;            // delay flag
+unsigned long pastTime = 0;  // var to store time
 
 //
 //=====================================================================================================================
@@ -92,14 +96,28 @@ void loop() {
 #ifdef PRINT_COLOUR
     Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
 #endif
-    if ((c >= 85 && c <= 90) && (g >= 30 && g <= 35) && (r >= 24 && r <= 28) && (b >= 24 && b <= 28)) {                  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
-      Bot.ToPosition("S2", cSorterServoLeft);                                    // Moves servo so stone slides into collection
+
+    if (flag == true) {
+      pastTime = millis();
+    }
+
+    if ((c >= 58 && c <= 70) && (g >= 25 && g <= 28) && (r >= 18 && r <= 22) && (b >= 18 && b <= 22)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+      Bot.ToPosition("S2", cSorterServoLeft);
+      Serial.print("Green");  // Moves servo so stone slides into collection
+      flag = false;           //reset flag
+      pastTime = millis();
+    } else if (((c >= 110 && c <= 130) && (g >= 42 && g <= 46) && (r >= 36 && r <= 44) && (b >= 33 && b <= 40)) && flag == true) {
+      //Bot.ToPosition("S2", cSorterServoMiddle);  // Moves servo so stone slides into disposal tube
     } else {
-      Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+      if ((millis() - pastTime) > 500){
+          Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+          flag = true;
+        }
     }
   }
   changeLEDColour();  // update LED colour to match what the TCS34725 is reading
 }
+
 
 void changeLEDColour() {
   SmartLEDs.setBrightness(150);                          // set brightness of LED
