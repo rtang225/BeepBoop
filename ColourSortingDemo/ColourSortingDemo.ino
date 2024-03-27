@@ -33,7 +33,8 @@ const int cSorterServoRight = 1600;   // Value for shoulder of arm fully up
 const int cSorterServoMiddle = 1370;  // Value for shoulder of arm fully up
 const int cSorterServoLeft = 1150;    // Value for shoulder of arm fully down
 
-bool flag = true;            // delay flag
+bool flag = true;  // delay flag
+bool firstPass = true;
 unsigned long pastTime = 0;  // var to store time
 
 //
@@ -106,13 +107,14 @@ void loop() {
       Serial.print("Green");  // Moves servo so stone slides into collection
       flag = false;           //reset flag
       pastTime = millis();
-    } else if (((c >= 110 && c <= 130) && (g >= 42 && g <= 46) && (r >= 36 && r <= 44) && (b >= 33 && b <= 40)) && flag == true) {
-      //Bot.ToPosition("S2", cSorterServoMiddle);  // Moves servo so stone slides into disposal tube
+      delay(500);
+    } else if (((c >= 110 && c <= 130) && (g >= 36 && g <= 45) && (r >= 34 && r <= 40) && (b >= 31 && b <= 40))) {  
+        Bot.ToPosition("S2", cSorterServoMiddle);  // Moves servo so stone slides into disposal tube
+        Serial.print("Wall");  // Moves servo so stone slides into collection
     } else {
-      if ((millis() - pastTime) > 500){
-          Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
-          flag = true;
-        }
+      Bot.ToPosition("S2", cSorterServoRight);
+      flag = false;
+      Serial.print("Not Green");  // Moves servo so stone slides into collection
     }
   }
   changeLEDColour();  // update LED colour to match what the TCS34725 is reading
