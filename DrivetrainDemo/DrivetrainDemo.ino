@@ -1,5 +1,5 @@
-#define DEBUG_ENCODER_COUNT 1
-// #define DEBUG_DRIVE_SPEED 1
+// #define DEBUG_ENCODER_COUNT 1
+#define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
@@ -220,10 +220,12 @@ void loop() {
           wheelLDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
           wheelRDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
 #ifdef DEBUG_DRIVE_SPEED
-          Serial.print(F(" Left Drive Speed: Pot R1 = "));
+          Serial.print(F("Left Drive Speed: Pot R1 = "));
           Serial.print(pot);
           Serial.print(F(", mapped = "));
-          Serial.println(leftDriveSpeed);
+          Serial.print(leftDriveSpeed);
+          Serial.print(F(", Wheel speed = "));
+          Serial.println(wheelLDriveSpeed);
 #endif
 #ifdef DEBUG_ENCODER_COUNT
           if (timeUp200msec) {
