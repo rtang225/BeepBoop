@@ -10,29 +10,30 @@ void Indicator();                                // for mode/heartbeat on Smart 
 void setTarget(int dir, long pos, double dist);  // sets encoder position target for movement
 
 // Port pin constants
-#define LEFT_MOTOR_A 35        // GPIO35 pin 28 (J35) Motor 1 A
-#define LEFT_MOTOR_B 36        // GPIO36 pin 29 (J36) Motor 1 B
-#define RIGHT_MOTOR_A 37       // GPIO37 pin 30 (J37) Motor 2 A
-#define RIGHT_MOTOR_B 38       // GPIO38 pin 31 (J38) Motor 2 B
-#define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO15 (J15)
-#define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO16 (J16)
-#define ENCODER_RIGHT_A 11     // right encoder A signal is connected to pin 19 GPIO11 (J11)
-#define ENCODER_RIGHT_B 12     // right encoder B signal is connected to pin 20 GPIO12 (J12)
 #define MODE_BUTTON 0          // GPIO0  pin 27 for Push Button 1
 #define MOTOR_ENABLE_SWITCH 3  // DIP Switch S1-1 pulls Digital pin D3 to ground when on, connected to pin 15 GPIO3 (J3)
 #define POT_R1 1               // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED 21           // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT 1      // number of SMART LEDs in use
+// Port pin constants for Drive System Wheels
+#define LEFT_MOTOR_A 35     // GPIO35 pin 28 (J35) Motor 1 A
+#define LEFT_MOTOR_B 36     // GPIO36 pin 29 (J36) Motor 1 B
+#define RIGHT_MOTOR_A 37    // GPIO37 pin 30 (J37) Motor 2 A
+#define RIGHT_MOTOR_B 38    // GPIO38 pin 31 (J38) Motor 2 B
+#define ENCODER_LEFT_A 9    // left encoder A signal is connected to GPIO9 (J9)
+#define ENCODER_LEFT_B 10   // left encoder B signal is connected to GPIO10 (J10)
+#define ENCODER_RIGHT_A 11  // right encoder A signal is connected to GPIO11 (J11)
+#define ENCODER_RIGHT_B 12  // right encoder B signal is connected to GPIO12 (J12)
 
 // Port pin constants for Picker Upper Wheel
-#define LEFT_MOTOR_2A 15   // GPIO15 (J15) Motor 1 A
-#define LEFT_MOTOR_2B 16   // GPIO16 (J16) Motor 1 B
-#define RIGHT_MOTOR_2A 17  // GPIO17 (J17) Motor 2 A
-#define RIGHT_MOTOR_2B 18  // GPIO18 (J18) Motor 2 B
-#define ENCODER_LEFT_2A 4  // left encoder A signal is connected to
-#define ENCODER_LEFT_2B 5
-#define ENCODER_RIGHT_2A 6  // left encoder B signal is connected to
-#define ENCODER_RIGHT_2B 7
+#define LEFT_MOTOR_2A 15    // GPIO15 (J15) Motor 1 A
+#define LEFT_MOTOR_2B 16    // GPIO16 (J16) Motor 1 B
+#define RIGHT_MOTOR_2A 17   // GPIO17 (J17) Motor 2 A
+#define RIGHT_MOTOR_2B 18   // GPIO18 (J18) Motor 2 B
+#define ENCODER_LEFT_2A 4   // left encoder A signal is connected to GPIO4 (J4)
+#define ENCODER_LEFT_2B 5   // left encoder B signal is connected to GPIO5 (J5)
+#define ENCODER_RIGHT_2A 6  // right encoder A signal is connected to GPIO6 (J6)
+#define ENCODER_RIGHT_2B 7  // right encoder B signal is connected to GPIO7 (J7)
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
 const int cPWMRes = 8;                    // bit resolution for PWM
@@ -120,11 +121,11 @@ void setup() {
   Bot.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Bot.iLeftMotorRunning);       // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);   // set up right encoder
-  // leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
-  // rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
+  leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
+  rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
 
   // Set up wheel motors and encoders
-  Wheel.driveBegin("D1", LEFT_MOTOR_2A, LEFT_MOTOR_2B, RIGHT_MOTOR_2A, RIGHT_MOTOR_2B);  // set up motors as Drive 1
+  Wheel.driveBegin("D1", LEFT_MOTOR_2A, LEFT_MOTOR_2B, RIGHT_MOTOR_2A, RIGHT_MOTOR_2B);  // set up motors as Drive 2
   LeftEncoder2.Begin(ENCODER_LEFT_2A, ENCODER_LEFT_2B, &Wheel.iLeftMotorRunning);        // set up left encoder
   RightEncoder2.Begin(ENCODER_RIGHT_2A, ENCODER_RIGHT_2B, &Wheel.iRightMotorRunning);    // set up right encoder
 
@@ -164,10 +165,9 @@ void loop() {
 
     // 200 millisecond timer, counts 200 milliseconds
     timerCount200msec = timerCount200msec + 1;  // Increment 200 millisecond timer count
-    if (timerCount200msec > 200)                // If 200 milliseconds have elapsed
-    {
-      timerCount200msec = 0;  // Reset 200 millisecond timer count
-      timeUp200msec = true;   // Indicate that 200 milliseconds have elapsed
+    if (timerCount200msec > 200) {              // If 200 milliseconds have elapsed
+      timerCount200msec = 0;                    // Reset 200 millisecond timer count
+      timeUp200msec = true;                     // Indicate that 200 milliseconds have elapsed
     }
 
     // Mode pushbutton debounce and toggle
@@ -207,8 +207,11 @@ void loop() {
     switch (robotModeIndex) {
       case 0:  // Robot stopped
         Bot.Stop("D1");
-        LeftEncoder.clearEncoder();  // clear encoder counts
+        // clear encoder counts
+        LeftEncoder.clearEncoder();
         RightEncoder.clearEncoder();
+        LeftEncoder2.clearEncoder();
+        RightEncoder2.clearEncoder();
         driveIndex = 0;      // reset drive index
         timeUp2sec = false;  // reset 2 second timer
         break;
@@ -217,8 +220,10 @@ void loop() {
         if (timeUp3sec) {  // pause for 3 sec before running case 1 code
                            // Read pot to update drive motor speed
           pot = analogRead(POT_R1);
-          //           wheelLDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
-          //           wheelRDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
+          // wheelLDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
+          // wheelRDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
+          // wheelLDriveSpeed = cMaxPWM;
+          // wheelLDriveSpeed = cMaxPWM;
           leftDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
           rightDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
 #ifdef DEBUG_DRIVE_SPEED
@@ -226,8 +231,10 @@ void loop() {
           Serial.print(pot);
           Serial.print(F(", mapped = "));
           Serial.print(leftDriveSpeed);
-          Serial.print(F(", Wheel speed = "));
-          Serial.println(wheelLDriveSpeed);
+          Serial.print(F(", Left wheel speed = "));
+          Serial.print(wheelLDriveSpeed);
+          Serial.print(F(", Right wheel speed = "));
+          Serial.println(wheelRDriveSpeed);
 #endif
 #ifdef DEBUG_ENCODER_COUNT
           if (timeUp200msec) {
@@ -245,7 +252,7 @@ void loop() {
             Serial.print("\n");
           }
 #endif
-          if (motorsEnabled) {  // run motors only if enabled
+          if (motorsEnabled) {                                        // run motors only if enabled
             // Wheel.Forward("D1", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
             if (timeUp2sec) {
               RightEncoder.getEncoderRawCount();  // read right encoder count
