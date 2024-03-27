@@ -253,7 +253,7 @@ void loop() {
             Serial.print("\n");
           }
 #endif
-          if (motorsEnabled) {  // run motors only if enabled
+          if (motorsEnabled) {                                        // run motors only if enabled
             Wheel.Forward("D2", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
             if (timeUp2sec) {
               RightEncoder.getEncoderRawCount();  // read right encoder count
