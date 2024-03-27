@@ -14,8 +14,8 @@ void setTarget(int dir, long pos, double dist);  // sets encoder position target
 #define LEFT_MOTOR_B 36        // GPIO36 pin 29 (J36) Motor 1 B
 #define RIGHT_MOTOR_A 37       // GPIO37 pin 30 (J37) Motor 2 A
 #define RIGHT_MOTOR_B 38       // GPIO38 pin 31 (J38) Motor 2 B
-#define ENCODER_LEFT_A 15      // left encoder A signal is connected to pin 8 GPIO15 (J15)
-#define ENCODER_LEFT_B 16      // left encoder B signal is connected to pin 8 GPIO16 (J16)
+#define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO15 (J15)
+#define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO16 (J16)
 #define ENCODER_RIGHT_A 11     // right encoder A signal is connected to pin 19 GPIO11 (J11)
 #define ENCODER_RIGHT_B 12     // right encoder B signal is connected to pin 20 GPIO12 (J12)
 #define MODE_BUTTON 0          // GPIO0  pin 27 for Push Button 1
@@ -64,8 +64,8 @@ unsigned long previousMicros;         // last microsecond count
 unsigned long currentMicros;          // current microsecond count
 double target;                        // target encoder count to keep track of distance travelled
 unsigned long prevTime;               // Get the current time in milliseconds
-float driveDistance = 80;            // Forward/backward drive distance
-float turningDistance = 8.8;          // Turning distance counter
+float driveDistance = 80;             // Forward/backward drive distance
+float turningDistance = 4.4;          // Turning distance counter
 int driveCounter = 0;                 // Counter for drive circles
 
 // Declare SK6812 SMART LED object

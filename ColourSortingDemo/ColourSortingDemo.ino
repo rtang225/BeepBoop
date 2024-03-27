@@ -92,7 +92,7 @@ void loop() {
 #ifdef PRINT_COLOUR
     Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
 #endif
-    if ((c >= 77 && c <= 81) || (g > 33 || r < 30 || b <= 30)) {                  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+    if ((c >= 85 && c <= 90) && (g >= 30 && g <= 35) && (r >= 24 && r <= 28) && (b >= 24 && b <= 28)) {                  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
       Bot.ToPosition("S2", cSorterServoLeft);                                    // Moves servo so stone slides into collection
     } else {
       Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
