@@ -27,11 +27,27 @@ const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 
-const int cGateServoOpen = 1700;     // Value for open position of claw
-const int cGateServoClosed = 1000;   // Value for closed position of claw
-const int cSorterServoRight = 1600;  // Value for shoulder of arm fully up
-const int cSorterServoLeft = 1150;   // Value for shoulder of arm fully down
+const int cGateServoOpen = 1700;      // Value for open position of claw
+const int cGateServoClosed = 1000;    // Value for closed position of claw
+const int cSorterServoRight = 1400;   // Value for shoulder of arm fully up
+const int cSorterServoLeft = 1150;    // Value for shoulder of arm fully down
 
+bool flag = true;            // delay flag
+unsigned long pastTime = 0;  // var to store time
+int count = 0;
+
+//VARIABLES FOR GREEN
+const int rLow = 23;
+const int rHigh = 33;
+
+const int gLow = 30;
+const int gHigh = 40;
+
+const int bLow = 21;
+const int bHigh = 31;
+
+const int cLow = 76;
+const int cHigh = 120;
 //
 //=====================================================================================================================
 
@@ -86,20 +102,41 @@ void setup() {
 }
 
 void loop() {
+  unsigned long currentTime = millis();  // Current time
+
   digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
   if (tcsFlag) {                                    // if colour sensor initialized
     tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
 #ifdef PRINT_COLOUR
     Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
 #endif
-    if ((c >= 77 && c <= 81) || (g > 33 || r < 30 || b <= 30)) {                  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
-      Bot.ToPosition("S2", cSorterServoLeft);                                    // Moves servo so stone slides into collection
-    } else {
+
+    if (flag == true) {
+      pastTime = millis();
       Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+    }
+
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+      count++;
+      Serial.print("count");
+    } else {
+      count = 0;
+      if ((millis() - pastTime) > 500) {
+        Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+        flag = true;
+        }
+      }
+    if (count >= 3){
+      Bot.ToPosition("S2", cSorterServoLeft);
+      Serial.print("Green");  // Moves servo so stone slides into collection
+      flag = false;           //reset flag
+      pastTime = millis();
+      count = 0;
     }
   }
   changeLEDColour();  // update LED colour to match what the TCS34725 is reading
 }
+
 
 void changeLEDColour() {
   SmartLEDs.setBrightness(150);                          // set brightness of LED
