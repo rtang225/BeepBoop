@@ -1,5 +1,5 @@
-#define DEBUG_ENCODER_COUNT 1
-// #define DEBUG_DRIVE_SPEED 1
+// #define DEBUG_ENCODER_COUNT 1
+#define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
@@ -14,8 +14,8 @@ void setTarget(int dir, long pos, double dist);  // sets encoder position target
 #define LEFT_MOTOR_B 36        // GPIO36 pin 29 (J36) Motor 1 B
 #define RIGHT_MOTOR_A 37       // GPIO37 pin 30 (J37) Motor 2 A
 #define RIGHT_MOTOR_B 38       // GPIO38 pin 31 (J38) Motor 2 B
-#define ENCODER_LEFT_A 15      // left encoder A signal is connected to pin 8 GPIO15 (J15)
-#define ENCODER_LEFT_B 16      // left encoder B signal is connected to pin 8 GPIO16 (J16)
+#define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO15 (J15)
+#define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO16 (J16)
 #define ENCODER_RIGHT_A 11     // right encoder A signal is connected to pin 19 GPIO11 (J11)
 #define ENCODER_RIGHT_B 12     // right encoder B signal is connected to pin 20 GPIO12 (J12)
 #define MODE_BUTTON 0          // GPIO0  pin 27 for Push Button 1
@@ -24,6 +24,15 @@ void setTarget(int dir, long pos, double dist);  // sets encoder position target
 #define SMART_LED 21           // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT 1      // number of SMART LEDs in use
 
+// Port pin constants for Picker Upper Wheel
+#define LEFT_MOTOR_2A 15   // GPIO15 (J15) Motor 1 A
+#define LEFT_MOTOR_2B 16   // GPIO16 (J16) Motor 1 B
+#define RIGHT_MOTOR_2A 17  // GPIO17 (J17) Motor 2 A
+#define RIGHT_MOTOR_2B 18  // GPIO18 (J18) Motor 2 B
+#define ENCODER_LEFT_2A 4  // left encoder A signal is connected to
+#define ENCODER_LEFT_2B 5
+#define ENCODER_RIGHT_2A 6  // left encoder B signal is connected to
+#define ENCODER_RIGHT_2B 7
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
 const int cPWMRes = 8;                    // bit resolution for PWM
@@ -54,6 +63,8 @@ boolean timeUp2sec = false;           // 2 second timer elapsed flag
 boolean timeUp200msec = false;        // 200 millisecond timer elapsed flag
 unsigned char leftDriveSpeed;         // motor drive speed (0-255)
 unsigned char rightDriveSpeed;        // motor drive speed (0-255)
+unsigned char wheelLDriveSpeed;       // wheel drive speed (0-255)
+unsigned char wheelRDriveSpeed;       // wheel drive soeed (0-255)
 unsigned char driveIndex;             // state index for run mode
 unsigned int modePBDebounce;          // pushbutton debounce timer count
 unsigned long timerCount3sec = 0;     // 3 second timer count in milliseconds
@@ -64,8 +75,8 @@ unsigned long previousMicros;         // last microsecond count
 unsigned long currentMicros;          // current microsecond count
 double target;                        // target encoder count to keep track of distance travelled
 unsigned long prevTime;               // Get the current time in milliseconds
-float driveDistance = 80;            // Forward/backward drive distance
-float turningDistance = 8.8;          // Turning distance counter
+float driveDistance = 80;             // Forward/backward drive distance
+float turningDistance = 4.4;          // Turning distance counter
 int driveCounter = 0;                 // Counter for drive circles
 
 // Declare SK6812 SMART LED object
@@ -96,15 +107,26 @@ Motion Bot = Motion();               // Instance of Motion for motor control
 Encoders LeftEncoder = Encoders();   // Instance of Encoders for left encoder data
 Encoders RightEncoder = Encoders();  // Instance of Encoders for right encoder data
 
+Motion Wheel = Motion();              // Instance of Motion for wheel control
+Encoders LeftEncoder2 = Encoders();   // Instance of Encoders for left encoder data
+Encoders RightEncoder2 = Encoders();  // Instance of Encoders for right encoder data
+
 void setup() {
 #if defined DEBUG_DRIVE_SPEED || DEBUG_ENCODER_COUNT
   Serial.begin(115200);
 #endif
 
-  // Set up motors and encoders
+  // Set up bot motors and encoders
   Bot.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Bot.iLeftMotorRunning);       // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);   // set up right encoder
+  // leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
+  // rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
+
+  // Set up wheel motors and encoders
+  Wheel.driveBegin("D1", LEFT_MOTOR_2A, LEFT_MOTOR_2B, RIGHT_MOTOR_2A, RIGHT_MOTOR_2B);  // set up motors as Drive 1
+  LeftEncoder2.Begin(ENCODER_LEFT_2A, ENCODER_LEFT_2B, &Wheel.iLeftMotorRunning);        // set up left encoder
+  RightEncoder2.Begin(ENCODER_RIGHT_2A, ENCODER_RIGHT_2B, &Wheel.iRightMotorRunning);    // set up right encoder
 
   // Set up SmartLED
   SmartLEDs.begin();                                     // initialize smart LEDs object (REQUIRED)
@@ -118,6 +140,7 @@ void setup() {
 }
 
 void loop() {
+
   long pos[] = { 0, 0 };  // current motor positions
   int pot = 0;            // raw ADC value from pot
 
@@ -194,13 +217,17 @@ void loop() {
         if (timeUp3sec) {  // pause for 3 sec before running case 1 code
                            // Read pot to update drive motor speed
           pot = analogRead(POT_R1);
+          //           wheelLDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
+          //           wheelRDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
           leftDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
           rightDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
 #ifdef DEBUG_DRIVE_SPEED
-          Serial.print(F(" Left Drive Speed: Pot R1 = "));
+          Serial.print(F("Left Drive Speed: Pot R1 = "));
           Serial.print(pot);
           Serial.print(F(", mapped = "));
-          Serial.println(leftDriveSpeed);
+          Serial.print(leftDriveSpeed);
+          Serial.print(F(", Wheel speed = "));
+          Serial.println(wheelLDriveSpeed);
 #endif
 #ifdef DEBUG_ENCODER_COUNT
           if (timeUp200msec) {
@@ -219,6 +246,7 @@ void loop() {
           }
 #endif
           if (motorsEnabled) {  // run motors only if enabled
+            // Wheel.Forward("D1", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
             if (timeUp2sec) {
               RightEncoder.getEncoderRawCount();  // read right encoder count
               switch (driveIndex) {               // cycle through drive states
@@ -309,7 +337,7 @@ void loop() {
                   Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount >= target) {
-                    if (driveCounter < 1) {
+                    if (driveCounter < 100) {
                       driveCounter++;
                       driveDistance -= 10;
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
