@@ -224,21 +224,21 @@ void loop() {
 
     // 500ms second timer
     tc3 = tc3 + 1;    // increment 500ms second timer count
-    if (tc3 > 500) {  // if 500ms seconds have elapsed
+    if (tc3 > 150) {  // if 500ms seconds have elapsed
       tc3 = 0;        // reset 500ms second timer count
       tc3Up = true;   // indicate that 500ms seconds have elapsed
     }
 
     // 500ms second timer
     tc2 = tc2 + 1;    // increment 500ms second timer count
-    if (tc2 > 500) {  // if 500ms seconds have elapsed
+    if (tc2 >150) {  // if 500ms seconds have elapsed
       tc2 = 0;        // reset 500ms second timer count
       tc2Up = true;   // indicate that 500ms seconds have elapsed
     }
 
     // 500ms second timer
     tc1 = tc1 + 1;    // increment 500ms second timer count
-    if (tc1 > 100) {  // if 500ms seconds have elapsed
+    if (tc1 > 80) {  // if 500ms seconds have elapsed
       tc1 = 0;        // reset 500ms second timer count
       tc1Up = true;   // indicate that 500ms seconds have elapsed
     }
@@ -296,16 +296,12 @@ void loop() {
         switch (driveModeIndex) {
           case 0:
             if (timeUp2sec) {  // pause for 3 sec before running case 1 code
-              leftDriveSpeed = cMaxPWM;
-              rightDriveSpeed = cMaxPWM;
+              leftDriveSpeed = cMaxPWM*0.9;
+              rightDriveSpeed = cMaxPWM*0.9;
               driveModeIndex++;
               timeUp2sec = false;
               tc3 = 0;
-              tc2 = 0;
-              tc1 = 0;
               tc3Up = false;
-              tc2Up = false;
-              tc1Up = false;
             }
             break;
 
@@ -314,12 +310,8 @@ void loop() {
 
             if (tc3Up) {
               driveModeIndex++;
-              tc3 = 0;
               tc2 = 0;
-              tc1 = 0;
-              tc3Up = false;
               tc2Up = false;
-              tc1Up = false;
             }
             break;
 
@@ -328,11 +320,7 @@ void loop() {
 
             if (tc2Up) {
               driveModeIndex++;
-              tc3 = 0;
-              tc2 = 0;
               tc1 = 0;
-              tc3Up = false;
-              tc2Up = false;
               tc1Up = false;
             }
             break;
@@ -341,12 +329,8 @@ void loop() {
             Wheel.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
             if (tc1Up) {
               driveModeIndex++;
-              tc3 = 0;
               tc2 = 0;
-              tc1 = 0;
-              tc3Up = false;
               tc2Up = false;
-              tc1Up = false;
             }
             break;
 
@@ -354,11 +338,9 @@ void loop() {
             Wheel.Stop("D1");
 
             if (tc2Up) {
-              driveModeIndex = 0;
+              driveModeIndex = 1;
               tc3 = 0;
-              tc2 = 0;
-              tc1 = 0;
-              tc2Up = false;
+              tc3Up = false;
             }
             break;
         }
