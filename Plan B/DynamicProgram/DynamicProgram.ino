@@ -18,7 +18,6 @@ Controls:
 // Function declarations
 void Indicator();                               // for mode/heartbeat on Smart LED
 void setTarget(int dir, long pos, double dist); // sets encoder position target for movement
-void returnPath();                              // function for running the return path code
 
 // Port pin constants
 #define LEFT_MOTOR_A 35       // GPIO35 pin 28 (J35) Motor 1 A
@@ -34,10 +33,10 @@ void returnPath();                              // function for running the retu
 #define POT_R1 1              // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED 21          // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT 1     // number of SMART LEDs in use
-#define GATE_SERVO 42         // GPIO42 pin 35 (J42) Servo 2
+#define GATE_SERVO 41         // GPIO42 pin 35 (J42) Servo 2
 
 // IR DETECTOR
-#define IR_DETECTOR 4 // GPIO14 pin 17 (J14) IR detector input
+#define IR_DETECTOR 15 // GPIO14 pin 17 (J14) IR detector input
 
 // ULTRASONIC SENSOR
 #define TRIGGER_PIN 48
@@ -134,6 +133,7 @@ void setup()
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);  // set up right encoder
 
   Bot.servoBegin("S1", GATE_SERVO); // set up claw servo
+  Scan.Begin(IR_DETECTOR, 1200); // set up IR Detection @ 1200 baud
 
   // Set up SmartLED
   SmartLEDs.begin();                                    // initialize smart LEDs object (REQUIRED)
@@ -273,6 +273,7 @@ void loop()
             {                 // cycle through drive states
             case 0:           // Stop
               Bot.Stop("D1"); // drive ID
+              Bot.ToPosition("S1", cGateServoClosed); // Opens gate
 
               setTarget(1, RightEncoder.lRawEncoderCount, 175); // set target to drive forward
               driveIndex++;                                     // next state: drive forward
@@ -284,7 +285,7 @@ void loop()
               if (RightEncoder.lRawEncoderCount >= target)
               {
                 setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance); // set next target to turn 90 degrees CCW
-                driveIndex++;                                                  // next state: turn left
+                driveIndex ++;                                                  // next state: turn left
               }
               break;
 
@@ -324,27 +325,31 @@ void loop()
               if (RightEncoder.lRawEncoderCount >= target)
               {
                 driveIndex++;
-                break;
-                // returnPath();
-                robotModeIndex = 0;
-                break;
               }
+              break;
             case 4:
               Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);
-              if (Scan.Get_IR_Data() == 'U')
+              //if (Scan.Available()) {
+                //Serial.println(Scan.Get_IR_Data());
+              //}
+              if (Scan.Available() && Scan.Get_IR_Data() == 'U')
               {
                 Bot.Stop("D1");
                 driveIndex++;
               }
+              break;
             case 5:
               Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
+              Serial.println(sonar.ping_cm());
               if (sonar.ping_cm() <= 2.00)
               {
                 Bot.Stop("D1");
                 driveIndex++; // Move to next case
               }
+              break;
             case 6:
               Bot.ToPosition("S1", cGateServoOpen); // Opens gate
+              Serial.println("Done");
               robotModeIndex = 0;
               break;
             }

@@ -420,7 +420,6 @@ void loop()
       else
       { // stop when motors are disabled
         Bot.Stop("D1");
-        Wheel.Stop("D2");
       }
       break;
 
