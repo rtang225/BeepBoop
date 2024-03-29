@@ -51,8 +51,9 @@ const double cDistPerRev = 13.2;          // distance travelled by robot in 1 fu
 // const int cClawServoClosed = 2150;  // Value for closed position of claw
 // const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
 // const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
-const int cLeftAdjust = 0;   // Amount to slow down left motor relative to right
-const int cRightAdjust = 30;  // Amount to slow down right motor relative to left
+const int cLeftAdjust = 0;     // Amount to slow down left motor relative to right
+const int cRightAdjust = 7.5;  // Amount to slow down right motor relative to left
+float turningDistance = 2.05;   // Turning distance counter
 
 //
 //=====================================================================================================================
@@ -75,7 +76,6 @@ unsigned long currentMicros;          // current microsecond count
 double target;                        // target encoder count to keep track of distance travelled
 unsigned long prevTime;               // Get the current time in milliseconds
 float driveDistance = 10;             // Forward/backward drive distance
-float turningDistance = 2.0;          // Turning distance counter
 int driveCounter = 0;                 // Counter for drive circles
 
 // Declare SK6812 SMART LED object
@@ -244,7 +244,7 @@ void loop() {
 
                   if (RightEncoder.lRawEncoderCount >= target) {
                     setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;  // next state: turn left
+                    driveIndex++;                                                   // next state: turn left
                   }
                   break;
 
@@ -252,11 +252,11 @@ void loop() {
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    if (driveCounter < 8) {
-                      driveDistance += 10;
+                    if (driveCounter < 10) {
+                      driveDistance += 20;
                       driveCounter++;
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                      driveIndex--;  // next state: drive forward
+                      driveIndex--;                                                // next state: drive forward
                     } else {
                       driveIndex++;
                     }
