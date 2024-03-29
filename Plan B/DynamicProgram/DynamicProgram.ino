@@ -275,6 +275,7 @@ void loop()
 
               if (RightEncoder.lRawEncoderCount <= target)
               {
+                  driveCounter++;
                 if (driveCounter <= 7)
                 {
                   if (driveCounter <= 2) {
@@ -286,7 +287,6 @@ void loop()
                   else if (driveCounter <= 6) {
                     driveDistance = 225;
                   }
-                  driveCounter++;
                   setTarget(1, RightEncoder.lRawEncoderCount, driveDistance); // set target to drive forward
                   driveIndex--;                                               // next state: drive forward
                 }
