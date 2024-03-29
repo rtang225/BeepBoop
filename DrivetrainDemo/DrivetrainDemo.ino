@@ -11,11 +11,11 @@ void Indicator();                               // for mode/heartbeat on Smart L
 void setTarget(int dir, long pos, double dist); // sets encoder position target for movement
 
 // Port pin constants
-#define MODE_BUTTON 0          // GPIO0  pin 27 for Push Button 1
-#define MOTOR_ENABLE_SWITCH 3  // DIP Switch S1-1 pulls Digital pin D3 to ground when on, connected to pin 15 GPIO3 (J3)
-#define POT_R1 1               // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
-#define SMART_LED 21           // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
-#define SMART_LED_COUNT 1      // number of SMART LEDs in use
+#define MODE_BUTTON 0         // GPIO0  pin 27 for Push Button 1
+#define MOTOR_ENABLE_SWITCH 3 // DIP Switch S1-1 pulls Digital pin D3 to ground when on, connected to pin 15 GPIO3 (J3)
+#define POT_R1 1              // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
+#define SMART_LED 21          // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
+#define SMART_LED_COUNT 1     // number of SMART LEDs in use
 
 // Port pin constants for Drive System Wheels
 #define LEFT_MOTOR_A 35    // GPIO35 pin 28 (J35) Motor 1 A
@@ -38,11 +38,11 @@ void setTarget(int dir, long pos, double dist); // sets encoder position target 
 #define ENCODER_RIGHT_2B 7 // right encoder B signal is connected to GPIO7 (J7)
 
 // IR DETECTOR
-#define IR_DETECTOR 14     // GPIO14 pin 17 (J14) IR detector input
+#define IR_DETECTOR 14 // GPIO14 pin 17 (J14) IR detector input
 
 // ULTRASONIC SENSOR
 #define TRIGGER_PIN 48
-#define ECHO_PIN 47 
+#define ECHO_PIN 47
 
 // Constants
 const int cDisplayUpdate = 100;          // update interval for Smart LED in milliseconds
@@ -121,10 +121,10 @@ Motion Bot = Motion();              // Instance of Motion for motor control
 Encoders LeftEncoder = Encoders();  // Instance of Encoders for left encoder data
 Encoders RightEncoder = Encoders(); // Instance of Encoders for right encoder data
 
-Motion LeftWheel = Motion();          // Instance of Motion for left wheel control
-Motion RightWheel = Motion();         // Instance of Motion for right wheel control
-Encoders LeftEncoder2 = Encoders();   // Instance of Encoders for left encoder data
-Encoders RightEncoder2 = Encoders();  // Instance of Encoders for right encoder data
+Motion LeftWheel = Motion();         // Instance of Motion for left wheel control
+Motion RightWheel = Motion();        // Instance of Motion for right wheel control
+Encoders LeftEncoder2 = Encoders();  // Instance of Encoders for left encoder data
+Encoders RightEncoder2 = Encoders(); // Instance of Encoders for right encoder data
 
 IR Scan = IR(); // instance of IR for detecting IR signals
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, detectionDistance);
@@ -143,8 +143,8 @@ void setup()
   // rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
 
   // Set up wheel motors and encoders
-  LeftWheel.motorBegin("M1", LEFT_MOTOR_2A, LEFT_MOTOR_2B);     // set up motor as Motor 1
-  RightWheel.motorBegin("M1", RIGHT_MOTOR_2A, RIGHT_MOTOR_2B);  // set up motor as Motor 2
+  LeftWheel.motorBegin("M1", LEFT_MOTOR_2A, LEFT_MOTOR_2B);    // set up motor as Motor 1
+  RightWheel.motorBegin("M1", RIGHT_MOTOR_2A, RIGHT_MOTOR_2B); // set up motor as Motor 2
   // LeftEncoder2.Begin(ENCODER_LEFT_2A, ENCODER_LEFT_2B, &LeftWheel.iLeftMotorRunning);       // set up left encoder
   // RightEncoder2.Begin(ENCODER_RIGHT_2A, ENCODER_RIGHT_2B, &RightWheel.iRightMotorRunning);  // set up right encoder
   wheelLDriveSpeed = cMaxPWM - cLeftAdjust;
@@ -242,19 +242,20 @@ void loop()
     // 0 = Default after power up/reset. Robot is stopped.
     // 1 = Press mode button once to enter. Run robot
 
-    switch (robotModeIndex) {
-      case 0:  // Robot stopped
-        Bot.Stop("D1");
-        LeftWheel.Stop("M1");
-        RightWheel.Stop("M1");
-        // clear encoder counts
-        LeftEncoder.clearEncoder();
-        RightEncoder.clearEncoder();
-        // LeftEncoder2.clearEncoder();
-        // RightEncoder2.clearEncoder();
-        driveIndex = 0;      // reset drive index
-        timeUp2sec = false;  // reset 2 second timer
-        break;
+    switch (robotModeIndex)
+    {
+    case 0: // Robot stopped
+      Bot.Stop("D1");
+      LeftWheel.Stop("M1");
+      RightWheel.Stop("M1");
+      // clear encoder counts
+      LeftEncoder.clearEncoder();
+      RightEncoder.clearEncoder();
+      // LeftEncoder2.clearEncoder();
+      // RightEncoder2.clearEncoder();
+      driveIndex = 0;     // reset drive index
+      timeUp2sec = false; // reset 2 second timer
+      break;
 
     case 1: // Run robot
       if (timeUp3sec)
@@ -292,14 +293,17 @@ void loop()
           Serial.print("\n");
         }
 #endif
-          if (motorsEnabled) {                                            // run motors only if enabled
-            LeftWheel.Forward("M1", wheelLDriveSpeed, wheelRDriveSpeed);  // Spin collection wheel
-            RightWheel.Reverse("M1", wheelLDriveSpeed, wheelRDriveSpeed);
-            if (timeUp2sec) {
-              RightEncoder.getEncoderRawCount();  // read right encoder count
-              switch (driveIndex) {               // cycle through drive states
-                case 0:                           // Stop
-                  Bot.Stop("D1");                 // drive ID
+        if (motorsEnabled)
+        {                                                              // run motors only if enabled
+          LeftWheel.Forward("M1", wheelLDriveSpeed, wheelRDriveSpeed); // Spin collection wheel
+          RightWheel.Reverse("M1", wheelLDriveSpeed, wheelRDriveSpeed);
+          if (timeUp2sec)
+          {
+            RightEncoder.getEncoderRawCount(); // read right encoder count
+            switch (driveIndex)
+            {                 // cycle through drive states
+            case 0:           // Stop
+              Bot.Stop("D1"); // drive ID
 
             case 1:                                               // Drive forward
               Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed); // drive ID, left speed, right speed
@@ -405,7 +409,9 @@ void loop()
               break;
             }
           }
-        } else {  // stop when motors are disabled
+        }
+        else
+        { // stop when motors are disabled
           Bot.Stop("D1");
           LeftWheel.Stop("M1");
           RightWheel.Stop("M2");
@@ -420,25 +426,30 @@ void loop()
 
     case 2:
       Bot.Stop("D1"); // drive ID
-      if (beaconLocated = false) {
+      if (beaconLocated = false)
+      {
         Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);
-        if (Scan.Available() && Scan.Get_IR_Data() == 'U') {
+        if (Scan.Available() && Scan.Get_IR_Data() == 'U')
+        {
           beaconLocated = true;
           Serial.println(Scan.Get_IR_Data());
           Bot.Stop("D1");
         }
       }
-      if (beaconLocated = true) {
+      if (beaconLocated = true)
+      {
         Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
         currentDistance = sonar.ping_cm();
-        if (currentDistance <= 5.00) {
+        if (currentDistance <= 5.00)
+        {
           driveIndex++; // Move to next case
         }
       }
       break;
     case 3:
-      if (Scan.Available()) {                                            // if data is received
-        Serial.println(Scan.Get_IR_Data());                              // output received data to serial
+      if (Scan.Available())
+      {                                     // if data is received
+        Serial.println(Scan.Get_IR_Data()); // output received data to serial
       }
       break;
     }
