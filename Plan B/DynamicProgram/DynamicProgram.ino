@@ -292,15 +292,20 @@ void loop()
                 }
                 else
                 {
+                  setTarget(1, RightEncoder.lRawEncoderCount, 25);
                   driveIndex++;
                 }
               }
               break;
 
             case 3:
-              returnPath();
+              Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed); // drive ID, left speed, right speed
+              if (RightEncoder.lRawEncoderCount >= target)
+              {
+                setTarget(-1, RightEncoder.lRawEncoderCount, driveDistance); // set next target to turn 90 degrees CCW                                               // next state: turn left
+              }
+              //returnPath();
               robotModeIndex = 0;
-
               break;
             }
           }
