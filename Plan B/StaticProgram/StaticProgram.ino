@@ -200,7 +200,7 @@ void loop()
     if (flag == true)
     {
       pastTime = millis();
-      Bot.ToPosition("S2", cSorterServoRight); // Moves servo so stone slides into disposal tube
+      Wheel.ToPosition("S2", cSorterServoRight); // Moves servo so stone slides into disposal tube
     }
 
     if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh))
@@ -213,13 +213,13 @@ void loop()
       count = 0;
       if ((millis() - pastTime) > 500)
       {
-        Bot.ToPosition("S2", cSorterServoRight); // Moves servo so stone slides into disposal tube
+        Wheel.ToPosition("S2", cSorterServoRight); // Moves servo so stone slides into disposal tube
         flag = true;
       }
     }
     if (count >= 3)
     {
-      Bot.ToPosition("S2", cSorterServoLeft);
+      Wheel.ToPosition("S2", cSorterServoLeft);
       Serial.print("Green"); // Moves servo so stone slides into collection
       flag = false;          // reset flag
       pastTime = millis();

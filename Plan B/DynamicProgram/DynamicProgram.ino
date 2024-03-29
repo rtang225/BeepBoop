@@ -314,7 +314,7 @@ void loop()
                 }
                 else
                 {
-                  setTarget(1, RightEncoder.lRawEncoderCount, 5);
+                  setTarget(-1, RightEncoder.lRawEncoderCount, 5);
                   driveIndex++;
                 }
               }
@@ -322,25 +322,26 @@ void loop()
 
             case 3:
               Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed); // drive ID, left speed, right speed
-              if (RightEncoder.lRawEncoderCount >= target)
+              if (RightEncoder.lRawEncoderCount <= target)
               {
                 driveIndex++;
               }
               break;
             case 4:
               Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);
-              // if (Scan.Available()) {
-              // Serial.println(Scan.Get_IR_Data());
-              //}
-              if (Scan.Available() && Scan.Get_IR_Data() == 'U')
+              if (Scan.Available())
               {
-                Bot.Stop("D1");
-                driveIndex++;
+                Serial.println(Scan.Get_IR_Data());
+                if (Scan.Get_IR_Data() == 'U') {
+                  // Serial.println(Scan.Get_IR_Data() == 'U');
+                  Bot.Stop("D1");
+                  driveIndex++;
+                }
               }
               break;
             case 5:
               Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
-              // Serial.println(sonar.ping_cm());
+              Serial.println(sonar.ping_cm());
               if (sonar.ping_cm() <= 2.00)
               {
                 Bot.Stop("D1");
@@ -377,22 +378,23 @@ void loop()
       }
     }
   }
-  // Set colour of Smart LED depending on robot mode (and update brightness)
-  void Indicator()
-  {
-    SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]); // set pixel colors to = mode
-    SmartLEDs.show();                                          // send the updated pixel colors to the hardware
-  }
+}
+// Set colour of Smart LED depending on robot mode (and update brightness)
+void Indicator()
+{
+  SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]); // set pixel colors to = mode
+  SmartLEDs.show();                                          // send the updated pixel colors to the hardware
+}
 
-  // Set target of motor encoder
-  void setTarget(int dir, long pos, double dist)
-  {
-    if (dir == 1)
-    { // Forwards
-      target = pos + ((dist / cDistPerRev) * cCountsRev);
-    }
-    if (dir == -1)
-    { // Backwards
-      target = pos - ((dist / cDistPerRev) * cCountsRev);
-    }
+// Set target of motor encoder
+void setTarget(int dir, long pos, double dist)
+{
+  if (dir == 1)
+  { // Forwards
+    target = pos + ((dist / cDistPerRev) * cCountsRev);
   }
+  if (dir == -1)
+  { // Backwards
+    target = pos - ((dist / cDistPerRev) * cCountsRev);
+  }
+}
