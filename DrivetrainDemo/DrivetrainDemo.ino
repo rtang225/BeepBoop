@@ -36,9 +36,12 @@ void setTarget(int dir, long pos, double dist); // sets encoder position target 
 #define ENCODER_RIGHT_2A 6 // right encoder A signal is connected to GPIO6 (J6)
 #define ENCODER_RIGHT_2B 7 // right encoder B signal is connected to GPIO7 (J7)
 
+// IR DETECTOR
+#define IR_DETECTOR 14     // GPIO14 pin 17 (J14) IR detector input
+
 // ULTRASONIC SENSOR
-#define TRIGGER_PIN 9 // CHANGE THIS
-#define ECHO_PIN 10 // CHANGE THIS
+#define TRIGGER_PIN 48
+#define ECHO_PIN 47 
 
 // Constants
 const int cDisplayUpdate = 100;          // update interval for Smart LED in milliseconds
@@ -429,6 +432,11 @@ void loop()
         if (currentDistance <= 5.00) {
           driveIndex++; // Move to next case
         }
+      }
+      break;
+    case 3:
+      if (Scan.Available()) {                                            // if data is received
+        Serial.println(Scan.Get_IR_Data());                              // output received data to serial
       }
       break;
     }
