@@ -278,13 +278,13 @@ void loop()
                 if (driveCounter <= 7)
                 {
                   if (driveCounter <= 2) {
-                    driveDistance += 75;
+                    driveDistance = 75;
                   }
                   else if (driveCounter <= 4 || driveCounter == 7) {
-                    driveDistance += 150;
+                    driveDistance = 150;
                   }
                   else if (driveCounter <= 6) {
-                    driveDistance += 225;
+                    driveDistance = 225;
                   }
                   driveCounter++;
                   setTarget(1, RightEncoder.lRawEncoderCount, driveDistance); // set target to drive forward
