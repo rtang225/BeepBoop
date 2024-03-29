@@ -34,7 +34,7 @@ void returnPath();                              // function for running the retu
 #define POT_R1 1              // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED 21          // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT 1     // number of SMART LEDs in use
-#define GATE_SERVO 42    // GPIO42 pin 35 (J42) Servo 2
+#define GATE_SERVO 42         // GPIO42 pin 35 (J42) Servo 2
 
 // IR DETECTOR
 #define IR_DETECTOR 4 // GPIO14 pin 17 (J14) IR detector input
@@ -66,8 +66,8 @@ float turningDistance = 2.05; // Turning distance counter
 
 const int detectionDistance = 400; // Ultrasonic range
 
-const int cGateServoOpen = 1700;     // Value for open position of claw
-const int cGateServoClosed = 1000;   // Value for closed position of claw
+const int cGateServoOpen = 1700;   // Value for open position of claw
+const int cGateServoClosed = 1000; // Value for closed position of claw
 //
 //=====================================================================================================================
 
@@ -133,7 +133,7 @@ void setup()
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Bot.iLeftMotorRunning);      // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);  // set up right encoder
 
-  Bot.servoBegin("S1", GATE_SERVO);    // set up claw servo
+  Bot.servoBegin("S1", GATE_SERVO); // set up claw servo
 
   // Set up SmartLED
   SmartLEDs.begin();                                    // initialize smart LEDs object (REQUIRED)
