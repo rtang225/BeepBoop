@@ -12,6 +12,9 @@ Controls:
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 #include <MSE2202_Lib.h>
+#include <Wire.h>
+#include <SPI.h>
+#include "Adafruit_TCS34725.h"
 
 // Function declarations
 void Indicator();                                // for mode/heartbeat on Smart LED
@@ -40,29 +43,59 @@ const int cMaxPWM = pow(2, cPWMRes) - 1;  // PWM value for maximum speed
 const int cCountsRev = 1096;              // encoder pulses per motor revolution
 const double cDistPerRev = 13.2;          // distance travelled by robot in 1 full revolution of the motor (1096 counts = 13.2 cm)
 
+const int cSmartLED = 21;      // when DIP switch S1-4 is on, SMART LED is connected to GPIO21
+const int cSmartLEDCount = 1;  // number of Smart LEDs in use
+const int cSDA = 47;           // GPIO pin for I2C data
+const int cSCL = 48;           // GPIO pin for I2C clock
+const int cTCSLED = 14;        // GPIO pin for LED on TCS34725
+const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
+
+
 //=====================================================================================================================
 //
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
+// Port pin constants
+#define SORTER_SERVO 41  // GPIO41 pin 34 (J41) Servo 1
+#define GATE_SERVO 42    // GPIO42 pin 35 (J42) Servo 2
 
-const int cClawServoOpen = 1000;    // Value for open position of claw
-const int cClawServoClosed = 2150;  // Value for closed position of claw
-const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
-const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
-const int cLeftAdjust = 0;          // Amount to slow down left motor relative to right
-const int cRightAdjust = 0;         // Amount to slow down right motor relative to left
+const int cGateServoOpen = 1700;     // Value for open position of claw
+const int cGateServoClosed = 1000;   // Value for closed position of claw
+const int cSorterServoRight = 1400;  // Value for shoulder of arm fully up
+const int cSorterServoLeft = 1150;   // Value for shoulder of arm fully down
+
+bool flag = true;            // delay flag
+unsigned long pastTime = 0;  // var to store time
+
+// VARIABLES FOR GREEN
+const int rLow = 29;
+const int rHigh = 31;
+
+const int gLow = 33;
+const int gHigh = 35;
+
+const int bLow = 27;
+const int bHigh = 30;
+
+const int cLow = 90;
+const int cHigh = 105;
 
 //
 //=====================================================================================================================
 
 // Variables
-boolean motorsEnabled = true;      // motors enabled flag
-boolean timeUp3sec = false;        // 3 second timer elapsed flag
-boolean timeUp2sec = false;        // 2 second timer elapsed flag
-unsigned char leftDriveSpeed;      // motor drive speed (0-255)
-unsigned char rightDriveSpeed;     // motor drive speed (0-255)
-unsigned int modePBDebounce;       // pushbutton debounce timer count
-unsigned long timerCount3sec = 0;  // 3 second timer count in milliseconds
+bool motorsEnabled = true;  // motors enabled flag
+bool firstPass = true;
+bool timeUp2sec = false;
+bool tc3Up = false;
+bool tc2Up = false;  // 2 second timer elapsed flag
+bool tc1Up = false;
+unsigned char leftDriveSpeed;   // motor drive speed (0-255)
+unsigned char rightDriveSpeed;  // motor drive speed (0-255)
+unsigned int modePBDebounce;    // pushbutton debounce timer count
+unsigned long tc3 = 0;          // 500ms second timer count in milliseconds
+unsigned long tc2 = 0;          // 250ms second timer count in milliseconds
+unsigned long tc1 = 0;
 unsigned long timerCount2sec = 0;  // 2 second timer count in milliseconds
 unsigned long displayTime;         // heartbeat LED update timer
 unsigned long previousMicros;      // last microsecond count
@@ -89,8 +122,9 @@ unsigned char LEDBrightnessIndex = 0;
 unsigned char LEDBrightnessLevels[] = { 5, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255,
                                         240, 225, 210, 195, 180, 165, 150, 135, 120, 105, 90, 75, 60, 45, 30, 15 };
 
-unsigned int robotModeIndex = 0;  // robot operational state
-unsigned int modeIndicator[6] = {
+int robotModeIndex = 0;  // robot operational state
+int driveModeIndex = 0;
+unsigned int modeIndicator[2] = {
   // colours for different modes
   SmartLEDs.Color(255, 0, 0),  //   red - stop
   SmartLEDs.Color(0, 255, 0),  //   green - run
@@ -101,17 +135,40 @@ Motion Wheel = Motion();             // Instance of Motion for wheel control
 Encoders LeftEncoder = Encoders();   // Instance of Encoders for left encoder data
 Encoders RightEncoder = Encoders();  // Instance of Encoders for right encoder data
 
+// Variables
+uint16_t r, g, b, c;  // RGBC values from TCS34725
+
+// TCS34725 colour sensor with 2.4 ms integration time and gain of 4
+// see https://github.com/adafruit/Adafruit_TCS34725/blob/master/Adafruit_TCS34725.h for all possible values
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_2_4MS, TCS34725_GAIN_4X);
+bool tcsFlag = 0;  // TCS34725 flag: 1 = connected; 0 = not found
+
 void setup() {
 #if defined DEBUG_DRIVE_SPEED || DEBUG_ENCODER_COUNT
   Serial.begin(115200);
 #endif
 
+  // Set up servos
+  Wheel.servoBegin("S1", GATE_SERVO);    // set up claw servo
+  Wheel.servoBegin("S2", SORTER_SERVO);  // set up shoulder servo
+
+  Wire.setPins(cSDA, cSCL);           // set I2C pins for TCS34725
+  pinMode(cTCSLED, OUTPUT);           // configure GPIO to control LED on TCS34725
+  pinMode(cLEDSwitch, INPUT_PULLUP);  // configure GPIO to set state of TCS34725 LED
+
+  // Connect to TCS34725 colour sensor
+  if (tcs.begin()) {
+    Serial.printf("Found TCS34725 colour sensor\n");
+    tcsFlag = true;
+  } else {
+    Serial.printf("No TCS34725 found ... check your connections\n");
+    tcsFlag = false;
+  }
+
   // Set up bot motors and encoders
   Wheel.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Wheel.iLeftMotorRunning);       // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Wheel.iRightMotorRunning);   // set up right encoder
-  // leftDriveSpeed = cMaxPWM - cLeftAdjust;                                          // Set left drive motor speed to max
-  // rightDriveSpeed = cMaxPWM - cRightAdjust;                                        // Set right drive motor speed to max
 
   // Set up SmartLED
   SmartLEDs.begin();                                     // initialize smart LEDs object (REQUIRED)
@@ -126,6 +183,37 @@ void setup() {
 
 void loop() {
 
+  // Colour Sensor Code:
+  //=====================================================================================================================
+  unsigned long currentTime = millis();  // Current time
+
+  digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
+  if (tcsFlag) {                                    // if colour sensor initialized
+    tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
+#ifdef PRINT_COLOUR
+    Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
+#endif
+
+    if (flag == true) {
+      pastTime = millis();
+      Wheel.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+    }
+
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+      Wheel.ToPosition("S2", cSorterServoLeft);
+      Serial.print("Green");  // Moves servo so stone slides into collection
+      flag = false;           // reset flag
+      pastTime = millis();
+    } else {
+      if ((millis() - pastTime) > 500) {
+        Wheel.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+        flag = true;
+      }
+    }
+  }
+
+  //=====================================================================================================================
+
   long pos[] = { 0, 0 };  // current motor positions
   int pot = 0;            // raw ADC value from pot
 
@@ -133,11 +221,26 @@ void loop() {
   if ((currentMicros - previousMicros) >= 1000) {  // enter when 1 ms has elapsed
     previousMicros = currentMicros;                // record current time in microseconds
 
-    // 3 second timer, counts 3000 milliseconds
-    timerCount3sec = timerCount3sec + 1;  // increment 3 second timer count
-    if (timerCount3sec > 3000) {          // if 3 seconds have elapsed
-      timerCount3sec = 0;                 // reset 3 second timer count
-      timeUp3sec = true;                  // indicate that 3 seconds have elapsed
+
+    // 500ms second timer
+    tc3 = tc3 + 1;    // increment 500ms second timer count
+    if (tc3 > 150) {  // if 500ms seconds have elapsed
+      tc3 = 0;        // reset 500ms second timer count
+      tc3Up = true;   // indicate that 500ms seconds have elapsed
+    }
+
+    // 500ms second timer
+    tc2 = tc2 + 1;    // increment 500ms second timer count
+    if (tc2 > 150) {  // if 500ms seconds have elapsed
+      tc2 = 0;        // reset 500ms second timer count
+      tc2Up = true;   // indicate that 500ms seconds have elapsed
+    }
+
+    // 500ms second timer
+    tc1 = tc1 + 1;   // increment 500ms second timer count
+    if (tc1 > 80) {  // if 500ms seconds have elapsed
+      tc1 = 0;       // reset 500ms second timer count
+      tc1Up = true;  // indicate that 500ms seconds have elapsed
     }
 
     // 2 second timer, counts 2000 milliseconds
@@ -167,9 +270,9 @@ void loop() {
         if (modePBDebounce >= 1025) {           // if pushbutton was released for 25 mS
           modePBDebounce = 0;                   // reset debounce timer count
           robotModeIndex++;                     // switch to next mode
-          robotModeIndex = robotModeIndex & 7;  // keep mode index between 0 and 7
-          timerCount3sec = 0;                   // reset 3 second timer count
-          timeUp3sec = false;                   // reset 3 second timer
+          robotModeIndex = robotModeIndex & 1;  // keep mode index between 0 and 1
+          timerCount2sec = 0;                   // reset 3 second timer count
+          timeUp2sec = false;                   // reset 3 second timer
         }
       }
     }
@@ -189,23 +292,57 @@ void loop() {
         timeUp2sec = false;  // reset 2 second timer
         break;
 
-      case 1:              // Run robot
-        if (timeUp3sec) {  // pause for 3 sec before running case 1 code
-                           // Read pot to update drive motor speed
-          pot = analogRead(POT_R1);
-          leftDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cLeftAdjust;
-          rightDriveSpeed = map(pot, 0, 4095, cMinPWM, cMaxPWM) - cRightAdjust;
-#ifdef DEBUG_DRIVE_SPEED
-          Serial.print(F("Left Drive Speed: Pot R1 = "));
-          Serial.print(pot);
-          Serial.print(F(", mapped = "));
-          Serial.print(leftDriveSpeed);
-#endif
-          if (motorsEnabled) {                                        // run motors only if enabled
+      case 1:  // Run robot
+        switch (driveModeIndex) {
+          case 0:
+            if (timeUp2sec) {  // pause for 2 sec before running case 1 code
+              leftDriveSpeed = cMaxPWM * 0.9;
+              rightDriveSpeed = cMaxPWM * 0.9;
+              driveModeIndex++;
+              timeUp2sec = false;
+              tc3 = 0;
+              tc3Up = false;
+            }
+            break;
+
+          case 1:
             Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
-          }
-        } else {  // stop when motors are disabled
-          Wheel.Stop("D1");
+
+            if (tc3Up) {
+              driveModeIndex++;
+              tc2 = 0;
+              tc2Up = false;
+            }
+            break;
+
+          case 2:
+            Wheel.Stop("D1");
+
+            if (tc2Up) {
+              driveModeIndex++;
+              tc1 = 0;
+              tc1Up = false;
+            }
+            break;
+
+          case 3:
+            Wheel.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
+            if (tc1Up) {
+              driveModeIndex++;
+              tc2 = 0;
+              tc2Up = false;
+            }
+            break;
+
+          case 4:
+            Wheel.Stop("D1");
+
+            if (tc2Up) {
+              driveModeIndex = 1;
+              tc3 = 0;
+              tc3Up = false;
+            }
+            break;
         }
         break;
     }
@@ -228,14 +365,4 @@ void loop() {
 void Indicator() {
   SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]);  // set pixel colors to = mode
   SmartLEDs.show();                                           // send the updated pixel colors to the hardware
-}
-
-// Set target of motor encoder
-void setTarget(int dir, long pos, double dist) {
-  if (dir == 1) {  // Forwards
-    target = pos + ((dist / cDistPerRev) * cCountsRev);
-  }
-  if (dir == -1) {  // Backwards
-    target = pos - ((dist / cDistPerRev) * cCountsRev);
-  }
 }

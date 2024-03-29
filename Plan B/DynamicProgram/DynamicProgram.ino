@@ -7,7 +7,7 @@ Controls:
 - Stone dispending
 */
 
-#define DEBUG_ENCODER_COUNT 1
+// #define DEBUG_ENCODER_COUNT 1
 // #define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
@@ -17,6 +17,7 @@ Controls:
 // Function declarations
 void Indicator();                                // for mode/heartbeat on Smart LED
 void setTarget(int dir, long pos, double dist);  // sets encoder position target for movement
+void returnPath();                               // function for running the return path code
 
 // Port pin constants
 #define LEFT_MOTOR_A 35        // GPIO35 pin 28 (J35) Motor 1 A
@@ -46,12 +47,12 @@ const double cDistPerRev = 13.2;          // distance travelled by robot in 1 fu
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 
-const int cClawServoOpen = 1000;    // Value for open position of claw
-const int cClawServoClosed = 2150;  // Value for closed position of claw
-const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
-const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
-const int cLeftAdjust = 0;          // Amount to slow down left motor relative to right
-const int cRightAdjust = 0;         // Amount to slow down right motor relative to left
+// const int cClawServoOpen = 1000;    // Value for open position of claw
+// const int cClawServoClosed = 2150;  // Value for closed position of claw
+// const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
+// const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
+const int cLeftAdjust = 0;   // Amount to slow down left motor relative to right
+const int cRightAdjust = 30;  // Amount to slow down right motor relative to left
 
 //
 //=====================================================================================================================
@@ -73,8 +74,8 @@ unsigned long previousMicros;         // last microsecond count
 unsigned long currentMicros;          // current microsecond count
 double target;                        // target encoder count to keep track of distance travelled
 unsigned long prevTime;               // Get the current time in milliseconds
-float driveDistance = 80;             // Forward/backward drive distance
-float turningDistance = 4.4;          // Turning distance counter
+float driveDistance = 10;             // Forward/backward drive distance
+float turningDistance = 2.0;          // Turning distance counter
 int driveCounter = 0;                 // Counter for drive circles
 
 // Declare SK6812 SMART LED object
@@ -234,8 +235,8 @@ void loop() {
                 case 0:                           // Stop
                   Bot.Stop("D1");                 // drive ID
 
-                  setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                  driveIndex++;                                                // next state: drive forward
+                  setTarget(1, RightEncoder.lRawEncoderCount, 120);  // set target to drive forward
+                  driveIndex++;                                      // next state: drive forward
                   break;
 
                 case 1:                                                // Drive forward
@@ -243,7 +244,7 @@ void loop() {
 
                   if (RightEncoder.lRawEncoderCount >= target) {
                     setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
+                    driveIndex++;  // next state: turn left
                   }
                   break;
 
@@ -251,82 +252,21 @@ void loop() {
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
 
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance -= 10;
-                    setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: drive forward
-                  }
-                  break;
-
-                case 3:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
-                  }
-                  break;
-
-                case 4:                                             // Turn left
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance -= 10;
-                    setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: drive forward
-                  }
-                  break;
-
-                case 5:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
-                  }
-                  break;
-
-                case 6:                                             // Turn left
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance -= 10;
-                    setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: drive forward
-                  }
-                  break;
-
-                case 7:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
-                  }
-                  break;
-
-                case 8:                                             // Turn left
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount <= target) {
-                    driveDistance -= 10;
-                    setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                    driveIndex++;                                                // next state: stop robot, exit drive mode
-                  }
-                  break;
-
-                case 9:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    if (driveCounter < 1) {
+                    if (driveCounter < 8) {
+                      driveDistance += 10;
                       driveCounter++;
-                      driveDistance -= 10;
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
-                      driveIndex = 1;
+                      driveIndex--;  // next state: drive forward
                     } else {
-                      robotModeIndex = 0;
+                      driveIndex++;
                     }
                   }
+                  break;
+
+                case 3:
+                  returnPath();
+                  robotModeIndex = 0;
+
                   break;
               }
             }
@@ -365,4 +305,8 @@ void setTarget(int dir, long pos, double dist) {
   if (dir == -1) {  // Backwards
     target = pos - ((dist / cDistPerRev) * cCountsRev);
   }
+}
+
+// Use IR sensor to find the beacon and then use the ultrasonic sensor to navigate to the deposit bin
+void returnPath() {
 }
