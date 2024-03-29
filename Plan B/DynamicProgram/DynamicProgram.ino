@@ -61,7 +61,7 @@ const double cDistPerRev = 13.2;         // distance travelled by robot in 1 ful
 // const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
 // const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
 const int cLeftAdjust = 0;    // Amount to slow down left motor relative to right
-const int cRightAdjust = 7.5; // Amount to slow down right motor relative to left
+const int cRightAdjust = 7.35; // Amount to slow down right motor relative to left
 float turningDistance = 2.05; // Turning distance counter
 
 const int detectionDistance = 400; // Ultrasonic range
@@ -313,7 +313,7 @@ void loop()
                 }
                 else
                 {
-                  setTarget(1, RightEncoder.lRawEncoderCount, 25);
+                  setTarget(1, RightEncoder.lRawEncoderCount, 5);
                   driveIndex++;
                 }
               }
