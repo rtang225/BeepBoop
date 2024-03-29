@@ -51,32 +51,32 @@ const double cDistPerRev = 13.2;         // distance travelled by robot in 1 ful
 // const int cClawServoClosed = 2150;  // Value for closed position of claw
 // const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
 // const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
-const int cLeftAdjust = 0;   // Amount to slow down left motor relative to right
-const int cRightAdjust = 30; // Amount to slow down right motor relative to left
+const int cLeftAdjust = 0;     // Amount to slow down left motor relative to right
+const int cRightAdjust = 7.5;  // Amount to slow down right motor relative to left
+float turningDistance = 2.05;   // Turning distance counter
 
 //
 //=====================================================================================================================
 
 // Variables
-boolean motorsEnabled = true;        // motors enabled flag
-boolean timeUp3sec = false;          // 3 second timer elapsed flag
-boolean timeUp2sec = false;          // 2 second timer elapsed flag
-boolean timeUp200msec = false;       // 200 millisecond timer elapsed flag
-unsigned char leftDriveSpeed;        // motor drive speed (0-255)
-unsigned char rightDriveSpeed;       // motor drive speed (0-255)
-unsigned char driveIndex;            // state index for run mode
-unsigned int modePBDebounce;         // pushbutton debounce timer count
-unsigned long timerCount3sec = 0;    // 3 second timer count in milliseconds
-unsigned long timerCount2sec = 0;    // 2 second timer count in milliseconds
-unsigned long timerCount200msec = 0; // 200 millisecond timer count in milliseconds
-unsigned long displayTime;           // heartbeat LED update timer
-unsigned long previousMicros;        // last microsecond count
-unsigned long currentMicros;         // current microsecond count
-double target;                       // target encoder count to keep track of distance travelled
-unsigned long prevTime;              // Get the current time in milliseconds
-float driveDistance = 10;            // Forward/backward drive distance
-float turningDistance = 2.0;         // Turning distance counter
-int driveCounter = 0;                // Counter for drive circles
+boolean motorsEnabled = true;         // motors enabled flag
+boolean timeUp3sec = false;           // 3 second timer elapsed flag
+boolean timeUp2sec = false;           // 2 second timer elapsed flag
+boolean timeUp200msec = false;        // 200 millisecond timer elapsed flag
+unsigned char leftDriveSpeed;         // motor drive speed (0-255)
+unsigned char rightDriveSpeed;        // motor drive speed (0-255)
+unsigned char driveIndex;             // state index for run mode
+unsigned int modePBDebounce;          // pushbutton debounce timer count
+unsigned long timerCount3sec = 0;     // 3 second timer count in milliseconds
+unsigned long timerCount2sec = 0;     // 2 second timer count in milliseconds
+unsigned long timerCount200msec = 0;  // 200 millisecond timer count in milliseconds
+unsigned long displayTime;            // heartbeat LED update timer
+unsigned long previousMicros;         // last microsecond count
+unsigned long currentMicros;          // current microsecond count
+double target;                        // target encoder count to keep track of distance travelled
+unsigned long prevTime;               // Get the current time in milliseconds
+float driveDistance = 10;             // Forward/backward drive distance
+int driveCounter = 0;                 // Counter for drive circles
 
 // Declare SK6812 SMART LED object
 //   Argument 1 = Number of LEDs (pixels) in use
