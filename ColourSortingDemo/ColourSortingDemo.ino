@@ -29,14 +29,24 @@ const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 
 const int cGateServoOpen = 1700;      // Value for open position of claw
 const int cGateServoClosed = 1000;    // Value for closed position of claw
-const int cSorterServoRight = 1600;   // Value for shoulder of arm fully up
-const int cSorterServoMiddle = 1370;  // Value for shoulder of arm fully up
+const int cSorterServoRight = 1400;   // Value for shoulder of arm fully up
 const int cSorterServoLeft = 1150;    // Value for shoulder of arm fully down
 
-bool flag = true;  // delay flag
-bool firstPass = true;
+bool flag = true;            // delay flag
 unsigned long pastTime = 0;  // var to store time
 
+//VARIABLES FOR GREEN
+const int rLow = 29;
+const int rHigh = 31;
+
+const int gLow = 33;
+const int gHigh = 35;
+
+const int bLow = 27;
+const int bHigh = 30;
+
+const int cLow = 90;
+const int cHigh = 105;
 //
 //=====================================================================================================================
 
@@ -91,6 +101,8 @@ void setup() {
 }
 
 void loop() {
+  unsigned long currentTime = millis();  // Current time
+
   digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
   if (tcsFlag) {                                    // if colour sensor initialized
     tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
@@ -100,21 +112,19 @@ void loop() {
 
     if (flag == true) {
       pastTime = millis();
+      Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
     }
 
-    if ((c >= 58 && c <= 70) && (g >= 25 && g <= 28) && (r >= 18 && r <= 22) && (b >= 18 && b <= 22)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
       Bot.ToPosition("S2", cSorterServoLeft);
       Serial.print("Green");  // Moves servo so stone slides into collection
       flag = false;           //reset flag
       pastTime = millis();
-      delay(500);
-    } else if (((c >= 110 && c <= 130) && (g >= 36 && g <= 45) && (r >= 34 && r <= 40) && (b >= 31 && b <= 40))) {  
-        Bot.ToPosition("S2", cSorterServoMiddle);  // Moves servo so stone slides into disposal tube
-        Serial.print("Wall");  // Moves servo so stone slides into collection
     } else {
-      Bot.ToPosition("S2", cSorterServoRight);
-      flag = false;
-      Serial.print("Not Green");  // Moves servo so stone slides into collection
+      if ((millis() - pastTime) > 500) {
+        Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+        flag = true;
+      }
     }
   }
   changeLEDColour();  // update LED colour to match what the TCS34725 is reading

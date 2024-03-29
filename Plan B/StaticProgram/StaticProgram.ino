@@ -21,10 +21,10 @@ void Indicator();                                // for mode/heartbeat on Smart 
 void setTarget(int dir, long pos, double dist);  // sets encoder position target for movement
 
 // Port pin constants
-#define LEFT_MOTOR_A 35        // GPIO35 pin 28 (J35) Motor 1 A
-#define LEFT_MOTOR_B 36        // GPIO36 pin 29 (J36) Motor 1 B
-#define RIGHT_MOTOR_A 37       // GPIO37 pin 30 (J37) Motor 2 A
-#define RIGHT_MOTOR_B 38       // GPIO38 pin 31 (J38) Motor 2 B
+#define LEFT_MOTOR_A 15        // GPIO35 pin 28 (J35) Motor 1 A
+#define LEFT_MOTOR_B 16        // GPIO36 pin 29 (J36) Motor 1 B
+#define RIGHT_MOTOR_A 17       // GPIO37 pin 30 (J37) Motor 2 A
+#define RIGHT_MOTOR_B 18       // GPIO38 pin 31 (J38) Motor 2 B
 #define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO15 (J15)
 #define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO16 (J16)
 #define ENCODER_RIGHT_A 11     // right encoder A signal is connected to pin 19 GPIO11 (J11)
