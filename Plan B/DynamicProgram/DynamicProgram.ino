@@ -59,9 +59,9 @@ const double cDistPerRev = 13.2;         // distance travelled by robot in 1 ful
 // const int cClawServoClosed = 2150;  // Value for closed position of claw
 // const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
 // const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
-const int cLeftAdjust = 0;    // Amount to slow down left motor relative to right
+const int cLeftAdjust = 0;     // Amount to slow down left motor relative to right
 const int cRightAdjust = 7.35; // Amount to slow down right motor relative to left
-float turningDistance = 2.05; // Turning distance counter
+float turningDistance = 2.05;  // Turning distance counter
 
 const int detectionDistance = 400; // Ultrasonic range
 
@@ -133,7 +133,7 @@ void setup()
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);  // set up right encoder
 
   Bot.servoBegin("S1", GATE_SERVO); // set up claw servo
-  Scan.Begin(IR_DETECTOR, 1200); // set up IR Detection @ 1200 baud
+  Scan.Begin(IR_DETECTOR, 1200);    // set up IR Detection @ 1200 baud
 
   // Set up SmartLED
   SmartLEDs.begin();                                    // initialize smart LEDs object (REQUIRED)
@@ -270,9 +270,9 @@ void loop()
           {
             RightEncoder.getEncoderRawCount(); // read right encoder count
             switch (driveIndex)
-            {                 // cycle through drive states
-            case 0:           // Stop
-              Bot.Stop("D1"); // drive ID
+            {                                         // cycle through drive states
+            case 0:                                   // Stop
+              Bot.Stop("D1");                         // drive ID
               Bot.ToPosition("S1", cGateServoClosed); // Opens gate
 
               setTarget(1, RightEncoder.lRawEncoderCount, 175); // set target to drive forward
@@ -285,7 +285,7 @@ void loop()
               if (RightEncoder.lRawEncoderCount >= target)
               {
                 setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance); // set next target to turn 90 degrees CCW
-                driveIndex ++;                                                  // next state: turn left
+                driveIndex++;                                                  // next state: turn left
               }
               break;
 
@@ -329,8 +329,8 @@ void loop()
               break;
             case 4:
               Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);
-              //if (Scan.Available()) {
-                //Serial.println(Scan.Get_IR_Data());
+              // if (Scan.Available()) {
+              // Serial.println(Scan.Get_IR_Data());
               //}
               if (Scan.Available() && Scan.Get_IR_Data() == 'U')
               {
@@ -340,7 +340,7 @@ void loop()
               break;
             case 5:
               Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
-              Serial.println(sonar.ping_cm());
+              // Serial.println(sonar.ping_cm());
               if (sonar.ping_cm() <= 2.00)
               {
                 Bot.Stop("D1");
@@ -377,23 +377,22 @@ void loop()
       }
     }
   }
-}
-// Set colour of Smart LED depending on robot mode (and update brightness)
-void Indicator()
-{
-  SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]); // set pixel colors to = mode
-  SmartLEDs.show();                                          // send the updated pixel colors to the hardware
-}
+  // Set colour of Smart LED depending on robot mode (and update brightness)
+  void Indicator()
+  {
+    SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]); // set pixel colors to = mode
+    SmartLEDs.show();                                          // send the updated pixel colors to the hardware
+  }
 
-// Set target of motor encoder
-void setTarget(int dir, long pos, double dist)
-{
-  if (dir == 1)
-  { // Forwards
-    target = pos + ((dist / cDistPerRev) * cCountsRev);
+  // Set target of motor encoder
+  void setTarget(int dir, long pos, double dist)
+  {
+    if (dir == 1)
+    { // Forwards
+      target = pos + ((dist / cDistPerRev) * cCountsRev);
+    }
+    if (dir == -1)
+    { // Backwards
+      target = pos - ((dist / cDistPerRev) * cCountsRev);
+    }
   }
-  if (dir == -1)
-  { // Backwards
-    target = pos - ((dist / cDistPerRev) * cCountsRev);
-  }
-}

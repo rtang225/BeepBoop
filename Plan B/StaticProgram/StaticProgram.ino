@@ -218,29 +218,29 @@ void loop() {
 
 
     // 500ms second timer
-    tc3 = tc3 + 1;    // increment 500ms second timer count
-    if (tc3 > 150) {  // if 500ms seconds have elapsed
-      tc3 = 0;        // reset 500ms second timer count
-      tc3Up = true;   // indicate that 500ms seconds have elapsed
+    tc3 = tc3 + 1;   // increment 500ms second timer count
+    if (tc3 > 45) {  // if 500ms seconds have elapsed
+      tc3 = 0;       // reset 500ms second timer count
+      tc3Up = true;  // indicate that 500ms seconds have elapsed
     }
 
     // 500ms second timer
-    tc2 = tc2 + 1;    // increment 500ms second timer count
-    if (tc2 > 150) {  // if 500ms seconds have elapsed
-      tc2 = 0;        // reset 500ms second timer count
-      tc2Up = true;   // indicate that 500ms seconds have elapsed
+    tc2 = tc2 + 1;   // increment 500ms second timer count
+    if (tc2 > 80) {  // if 500ms seconds have elapsed
+      tc2 = 0;       // reset 500ms second timer count
+      tc2Up = true;  // indicate that 500ms seconds have elapsed
     }
 
     // 500ms second timer
     tc1 = tc1 + 1;   // increment 500ms second timer count
-    if (tc1 > 80) {  // if 500ms seconds have elapsed
+    if (tc1 > 35) {  // if 500ms seconds have elapsed
       tc1 = 0;       // reset 500ms second timer count
       tc1Up = true;  // indicate that 500ms seconds have elapsed
     }
 
     // 2 second timer, counts 2000 milliseconds
     timerCount2sec = timerCount2sec + 1;  // increment 2 second timer count
-    if (timerCount2sec > 2000) {          // if 2 seconds have elapsed
+    if (timerCount2sec > 500) {           // if 2 seconds have elapsed
       timerCount2sec = 0;                 // reset 2 second timer count
       timeUp2sec = true;                  // indicate that 2 seconds have elapsed
     }
@@ -291,8 +291,8 @@ void loop() {
         switch (driveModeIndex) {
           case 0:
             if (timeUp2sec) {  // pause for 2 sec before running case 1 code
-              leftDriveSpeed = cMaxPWM * 0.9;
-              rightDriveSpeed = cMaxPWM * 0.9;
+              leftDriveSpeed = cMaxPWM - 20;
+              rightDriveSpeed = cMaxPWM - 20;
               driveModeIndex++;
               timeUp2sec = false;
               tc3 = 0;
@@ -315,12 +315,72 @@ void loop() {
 
             if (tc2Up) {
               driveModeIndex++;
+              tc3 = 0;
+              tc3Up = false;
+            }
+            break;
+
+          case 3:
+            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+
+            if (tc3Up) {
+              driveModeIndex++;
+              tc2 = 0;
+              tc2Up = false;
+            }
+            break;
+
+          case 4:
+            Wheel.Stop("D1");
+
+            if (tc2Up) {
+              driveModeIndex++;
+              tc3 = 0;
+              tc3Up = false;
+            }
+            break;
+
+          case 5:
+            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+
+            if (tc3Up) {
+              driveModeIndex++;
+              tc2 = 0;
+              tc2Up = false;
+            }
+            break;
+
+          case 6:
+            Wheel.Stop("D1");
+
+            if (tc2Up) {
+              driveModeIndex++;
+              tc3 = 0;
+              tc3Up = false;
+            }
+            break;
+
+          case 7:
+            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+
+            if (tc3Up) {
+              driveModeIndex++;
+              tc2 = 0;
+              tc2Up = false;
+            }
+            break;
+
+          case 8:
+            Wheel.Stop("D1");
+
+            if (tc2Up) {
+              driveModeIndex++;
               tc1 = 0;
               tc1Up = false;
             }
             break;
 
-          case 3:
+          case 9:
             Wheel.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
             if (tc1Up) {
               driveModeIndex++;
@@ -329,7 +389,7 @@ void loop() {
             }
             break;
 
-          case 4:
+          case 10:
             Wheel.Stop("D1");
 
             if (tc2Up) {
