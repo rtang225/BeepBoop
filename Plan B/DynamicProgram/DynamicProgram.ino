@@ -13,6 +13,7 @@ Controls:
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 #include <MSE2202_Lib.h>
+#include <NewPing.h>
 
 // Function declarations
 void Indicator();                               // for mode/heartbeat on Smart LED
@@ -33,6 +34,14 @@ void returnPath();                              // function for running the retu
 #define POT_R1 1              // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED 21          // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT 1     // number of SMART LEDs in use
+#define GATE_SERVO 42    // GPIO42 pin 35 (J42) Servo 2
+
+// IR DETECTOR
+#define IR_DETECTOR 4 // GPIO14 pin 17 (J14) IR detector input
+
+// ULTRASONIC SENSOR
+#define TRIGGER_PIN 48
+#define ECHO_PIN 47
 
 // Constants
 const int cDisplayUpdate = 100;          // update interval for Smart LED in milliseconds
@@ -51,32 +60,36 @@ const double cDistPerRev = 13.2;         // distance travelled by robot in 1 ful
 // const int cClawServoClosed = 2150;  // Value for closed position of claw
 // const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
 // const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
-const int cLeftAdjust = 0;     // Amount to slow down left motor relative to right
-const int cRightAdjust = 7.5;  // Amount to slow down right motor relative to left
-float turningDistance = 2.05;   // Turning distance counter
+const int cLeftAdjust = 0;    // Amount to slow down left motor relative to right
+const int cRightAdjust = 7.5; // Amount to slow down right motor relative to left
+float turningDistance = 2.05; // Turning distance counter
 
+const int detectionDistance = 400; // Ultrasonic range
+
+const int cGateServoOpen = 1700;     // Value for open position of claw
+const int cGateServoClosed = 1000;   // Value for closed position of claw
 //
 //=====================================================================================================================
 
 // Variables
-boolean motorsEnabled = true;         // motors enabled flag
-boolean timeUp3sec = false;           // 3 second timer elapsed flag
-boolean timeUp2sec = false;           // 2 second timer elapsed flag
-boolean timeUp200msec = false;        // 200 millisecond timer elapsed flag
-unsigned char leftDriveSpeed;         // motor drive speed (0-255)
-unsigned char rightDriveSpeed;        // motor drive speed (0-255)
-unsigned char driveIndex;             // state index for run mode
-unsigned int modePBDebounce;          // pushbutton debounce timer count
-unsigned long timerCount3sec = 0;     // 3 second timer count in milliseconds
-unsigned long timerCount2sec = 0;     // 2 second timer count in milliseconds
-unsigned long timerCount200msec = 0;  // 200 millisecond timer count in milliseconds
-unsigned long displayTime;            // heartbeat LED update timer
-unsigned long previousMicros;         // last microsecond count
-unsigned long currentMicros;          // current microsecond count
-double target;                        // target encoder count to keep track of distance travelled
-unsigned long prevTime;               // Get the current time in milliseconds
-float driveDistance = 10;             // Forward/backward drive distance
-int driveCounter = 0;                 // Counter for drive circles
+boolean motorsEnabled = true;        // motors enabled flag
+boolean timeUp3sec = false;          // 3 second timer elapsed flag
+boolean timeUp2sec = false;          // 2 second timer elapsed flag
+boolean timeUp200msec = false;       // 200 millisecond timer elapsed flag
+unsigned char leftDriveSpeed;        // motor drive speed (0-255)
+unsigned char rightDriveSpeed;       // motor drive speed (0-255)
+unsigned char driveIndex;            // state index for run mode
+unsigned int modePBDebounce;         // pushbutton debounce timer count
+unsigned long timerCount3sec = 0;    // 3 second timer count in milliseconds
+unsigned long timerCount2sec = 0;    // 2 second timer count in milliseconds
+unsigned long timerCount200msec = 0; // 200 millisecond timer count in milliseconds
+unsigned long displayTime;           // heartbeat LED update timer
+unsigned long previousMicros;        // last microsecond count
+unsigned long currentMicros;         // current microsecond count
+double target;                       // target encoder count to keep track of distance travelled
+unsigned long prevTime;              // Get the current time in milliseconds
+float driveDistance = 10;            // Forward/backward drive distance
+int driveCounter = 0;                // Counter for drive circles
 
 // Declare SK6812 SMART LED object
 //   Argument 1 = Number of LEDs (pixels) in use
@@ -106,6 +119,9 @@ Motion Bot = Motion();              // Instance of Motion for motor control
 Encoders LeftEncoder = Encoders();  // Instance of Encoders for left encoder data
 Encoders RightEncoder = Encoders(); // Instance of Encoders for right encoder data
 
+IR Scan = IR();                                          // instance of IR for detecting IR signals
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, detectionDistance); // Ultrasonic
+
 void setup()
 {
 #if defined DEBUG_DRIVE_SPEED || DEBUG_ENCODER_COUNT
@@ -116,6 +132,8 @@ void setup()
   Bot.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B); // set up motors as Drive 1
   LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Bot.iLeftMotorRunning);      // set up left encoder
   RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Bot.iRightMotorRunning);  // set up right encoder
+
+  Bot.servoBegin("S1", GATE_SERVO);    // set up claw servo
 
   // Set up SmartLED
   SmartLEDs.begin();                                    // initialize smart LEDs object (REQUIRED)
@@ -275,16 +293,19 @@ void loop()
 
               if (RightEncoder.lRawEncoderCount <= target)
               {
-                  driveCounter++;
+                driveCounter++;
                 if (driveCounter <= 7)
                 {
-                  if (driveCounter <= 2) {
+                  if (driveCounter <= 2)
+                  {
                     driveDistance = 75;
                   }
-                  else if (driveCounter <= 4 || driveCounter == 7) {
+                  else if (driveCounter <= 4 || driveCounter == 7)
+                  {
                     driveDistance = 150;
                   }
-                  else if (driveCounter <= 6) {
+                  else if (driveCounter <= 6)
+                  {
                     driveDistance = 225;
                   }
                   setTarget(1, RightEncoder.lRawEncoderCount, driveDistance); // set target to drive forward
@@ -302,38 +323,56 @@ void loop()
               Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed); // drive ID, left speed, right speed
               if (RightEncoder.lRawEncoderCount >= target)
               {
-                setTarget(-1, RightEncoder.lRawEncoderCount, driveDistance); // set next target to turn 90 degrees CCW                                               // next state: turn left
+                driveIndex++;
+                break;
+                // returnPath();
+                robotModeIndex = 0;
+                break;
               }
-              //returnPath();
+            case 4:
+              Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);
+              if (Scan.Get_IR_Data() == 'U')
+              {
+                Bot.Stop("D1");
+                driveIndex++;
+              }
+            case 5:
+              Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
+              if (sonar.ping_cm() <= 2.00)
+              {
+                Bot.Stop("D1");
+                driveIndex++; // Move to next case
+              }
+            case 6:
+              Bot.ToPosition("S1", cGateServoOpen); // Opens gate
               robotModeIndex = 0;
               break;
             }
           }
         }
+        else
+        { // stop when motors are disabled
+          Bot.Stop("D1");
+        }
+        break;
       }
-      else
-      { // stop when motors are disabled
-        Bot.Stop("D1");
-      }
-      break;
-    }
 
-    // Update brightness of heartbeat display on SmartLED
-    displayTime++; // count milliseconds
-    if (displayTime > cDisplayUpdate)
-    {                       // when display update period has passed
-      displayTime = 0;      // reset display counter
-      LEDBrightnessIndex++; // shift to next brightness level
-      if (LEDBrightnessIndex > sizeof(LEDBrightnessLevels))
-      {                         // if all defined levels have been used
-        LEDBrightnessIndex = 0; // reset to starting brightness
+      // Update brightness of heartbeat display on SmartLED
+      displayTime++; // count milliseconds
+      if (displayTime > cDisplayUpdate)
+      {                       // when display update period has passed
+        displayTime = 0;      // reset display counter
+        LEDBrightnessIndex++; // shift to next brightness level
+        if (LEDBrightnessIndex > sizeof(LEDBrightnessLevels))
+        {                         // if all defined levels have been used
+          LEDBrightnessIndex = 0; // reset to starting brightness
+        }
+        SmartLEDs.setBrightness(LEDBrightnessLevels[LEDBrightnessIndex]); // set brightness of heartbeat LED
+        Indicator();                                                      // update LED
       }
-      SmartLEDs.setBrightness(LEDBrightnessLevels[LEDBrightnessIndex]); // set brightness of heartbeat LED
-      Indicator();                                                      // update LED
     }
   }
 }
-
 // Set colour of Smart LED depending on robot mode (and update brightness)
 void Indicator()
 {
@@ -352,9 +391,4 @@ void setTarget(int dir, long pos, double dist)
   { // Backwards
     target = pos - ((dist / cDistPerRev) * cCountsRev);
   }
-}
-
-// Use IR sensor to find the beacon and then use the ultrasonic sensor to navigate to the deposit bin
-void returnPath()
-{
 }

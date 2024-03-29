@@ -38,7 +38,7 @@ void setTarget(int dir, long pos, double dist); // sets encoder position target 
 #define ENCODER_RIGHT_2B 7 // right encoder B signal is connected to GPIO7 (J7)
 
 // IR DETECTOR
-#define IR_DETECTOR 14 // GPIO14 pin 17 (J14) IR detector input
+#define IR_DETECTOR 4 // GPIO14 pin 17 (J14) IR detector input
 
 // ULTRASONIC SENSOR
 #define TRIGGER_PIN 48

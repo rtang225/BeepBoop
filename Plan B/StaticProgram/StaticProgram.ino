@@ -50,17 +50,13 @@ const int cSCL = 48;           // GPIO pin for I2C clock
 const int cTCSLED = 14;        // GPIO pin for LED on TCS34725
 const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 
-
 //=====================================================================================================================
 //
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 // Port pin constants
 #define SORTER_SERVO 41  // GPIO41 pin 34 (J41) Servo 1
-#define GATE_SERVO 42    // GPIO42 pin 35 (J42) Servo 2
 
-const int cGateServoOpen = 1700;     // Value for open position of claw
-const int cGateServoClosed = 1000;   // Value for closed position of claw
 const int cSorterServoRight = 1400;  // Value for shoulder of arm fully up
 const int cSorterServoLeft = 1150;   // Value for shoulder of arm fully down
 
@@ -149,7 +145,6 @@ void setup() {
 #endif
 
   // Set up servos
-  Wheel.servoBegin("S1", GATE_SERVO);    // set up claw servo
   Wheel.servoBegin("S2", SORTER_SERVO);  // set up shoulder servo
 
   Wire.setPins(cSDA, cSCL);           // set I2C pins for TCS34725
