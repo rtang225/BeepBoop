@@ -13,12 +13,13 @@ Controls:
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 #include <MSE2202_Lib.h>
-#include <NewPing.h>
+#include <NewPing.h>        // https://bitbucket.org/teckel12/arduino-new-ping/wiki/Home
 #include <MovingAverage.h>  // https://github.com/MaximilianKautzsch/MovingAverage
 
 // Function declarations
-void Indicator();                                // for mode/heartbeat on Smart LED
-void setTarget(int dir, long pos, double dist);  // sets encoder position target for movement
+void Indicator();                                  // for mode/heartbeat on Smart LED
+void setTarget(int dir, long pos, double dist);    // sets encoder position target for movement
+bool checkConsistency(int parameter, int cutoff);  // checks for consistency of a received signal
 
 // Port pin constants
 #define LEFT_MOTOR_A 35        // GPIO35 pin 28 (J35) Motor 1 A
@@ -70,7 +71,7 @@ const int cGateServoOpen = 1700;    // Value for open position of claw
 const int cGateServoClosed = 1000;  // Value for closed position of claw
 
 const float cAlpha = 0.1;   // Constant for exponential moving average filter
-const int cWindowSize = 5;  // Moving average filter window size
+const int cWindowSize = 7;  // Moving average filter window size
 //
 //=====================================================================================================================
 
@@ -93,11 +94,13 @@ double target;                        // target encoder count to keep track of d
 unsigned long prevTime;               // Get the current time in milliseconds
 float driveDistance = 10;             // Forward/backward drive distance
 int driveCounter = 0;                 // Counter for drive circles
+int charCounter = 0;                  // Counter for consistency of characters received from IR beacon
 int irUCounter = 0;                   // Counter for U received from IR beacon
 char receivedChar;                    // Character received from IR beacon
 double lastAvg = 0.0;                 // Last average for exponential moving average filter
 double curAvg = 0.0;                  // Current average for exponential moving average filter
 int sonarReading;                     // Reading from ultrasonic sensor
+int sonarCounter = 0;                 // Counter for consistency of sonar measured distance
 
 // Declare SK6812 SMART LED object
 //   Argument 1 = Number of LEDs (pixels) in use
@@ -264,7 +267,7 @@ void loop() {
               switch (driveIndex) {                        // cycle through drive states
                 case 0:                                    // Stop
                   Bot.Stop("D1");                          // drive ID
-                  Bot.ToPosition("S1", cGateServoClosed);  // Opens gate
+                  Bot.ToPosition("S1", cGateServoClosed);  // Closes gate
 
                   setTarget(1, RightEncoder.lRawEncoderCount, 175);  // set target to drive forward
                   driveIndex++;                                      // next state: drive forward
@@ -301,21 +304,50 @@ void loop() {
                   }
                   break;
 
-                case 3:
+                case 3:                                                // Drive backwards
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   if (RightEncoder.lRawEncoderCount <= target) {
                     driveIndex++;
                   }
                   break;
-                case 4:
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);
+                case 4:                                             // Checks if a character is received at all
+                  leftDriveSpeed = cMaxPWM * 0.76;                  // Slow down left wheel drive speed
+                  rightDriveSpeed = cMaxPWM * 0.76;                 // Slow down right wheel drive speed
+                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // Turn left
                   // Checks for consistency of signal being received from the IR beacon
+                  if (Scan.Available()) {  // Checks if a scan is available
+                    receivedChar = Scan.Get_IR_Data();
+                    // Serial.println(receivedChar);
+                    if (receivedChar != ' ') {  // Checks if ANY character is received
+                      charCounter++;
+                      if (charCounter > 5) {  // Checks for 5 consecutive characters
+                        Bot.Stop("D1");
+                        setTarget(-1, RightEncoder.lRawEncoderCount, 50);
+                        driveIndex++;
+                      }
+                    } else {
+                      charCounter = 0;
+                    }
+                  }
+                  break;
+                case 5:                                                // Reverses closer to signal
+                  Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
+                  if (RightEncoder.lRawEncoderCount <= target) {
+                    Bot.Stop("D1");
+                    driveIndex++;
+                  }
+                  break;
+                case 6:                                             // Checks if the signal is a U
+                  leftDriveSpeed = cMaxPWM * 0.76;                  // Slow down left wheel drive speed
+                  rightDriveSpeed = cMaxPWM * 0.76;                 // Slow down right wheel drive speed
+                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // Turn left
+                  // Check for consistency of signal being received from the IR beacon
                   if (Scan.Available()) {  // Checks if a scan is available
                     receivedChar = Scan.Get_IR_Data();
                     // Serial.println(receivedChar);
                     if (receivedChar == 'U') {  // Checks if the received character is a U
                       irUCounter++;
-                      if (irUCounter > 10) {  // Checks for 10 U's is a row
+                      if (irUCounter > 16) {  // Checks for 16 consecutive U's
                         Bot.Stop("D1");
                         driveIndex++;
                       }
@@ -324,19 +356,25 @@ void loop() {
                     }
                   }
                   break;
-                case 5:
-                  // Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
+                case 7:                                                // Drive backwards
+                  Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   sonarReading = sonar.ping_cm();
-                  filter.add(sonarReading);
+                  filter.add(sonarReading);  // Moving average filter
                   // Serial.print(sonarReading);
                   // Serial.print(", ");
                   // Serial.println(filter.readAverage(cWindowSize));
-                  if (filter.readAverage(cWindowSize) <= 2.00) {
-                    Bot.Stop("D1");
-                    driveIndex++;  // Move to next case
+                  // Checks for consistency of signal being received from sonar
+                  if (filter.readAverage(cWindowSize) <= 2.50) {
+                    sonarCounter++;
+                    if (sonarCounter > 6) {  // Check for 6 consecutive readings <= 2.50cm
+                      Bot.Stop("D1");
+                      driveIndex++;  // Move to next case
+                    }
+                  } else {
+                    sonarCounter = 0;
                   }
                   break;
-                case 6:
+                case 8:                                  // Deposits gems into collection container
                   Bot.ToPosition("S1", cGateServoOpen);  // Opens gate
                   Serial.println("Done");
                   robotModeIndex = 0;
@@ -363,6 +401,7 @@ void loop() {
     }
   }
 }
+
 // Set colour of Smart LED depending on robot mode (and update brightness)
 void Indicator() {
   SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]);  // set pixel colors to = mode
@@ -377,4 +416,7 @@ void setTarget(int dir, long pos, double dist) {
   if (dir == -1) {  // Backwards
     target = pos - ((dist / cDistPerRev) * cCountsRev);
   }
+}
+
+bool checkConsistency(int parameter, int cutoff) {
 }
