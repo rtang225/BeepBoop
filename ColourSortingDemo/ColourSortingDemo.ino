@@ -34,19 +34,18 @@ const int cSorterServoLeft = 1150;    // Value for shoulder of arm fully down
 
 bool flag = true;            // delay flag
 unsigned long pastTime = 0;  // var to store time
+int count = 0;
 
 //VARIABLES FOR GREEN
-const int rLow = 29;
-const int rHigh = 31;
+const int rLow = 24;
+const int rHigh = 30;
 
-const int gLow = 33;
-const int gHigh = 35;
+const int gLow = 26;
+const int gHigh = 34;
 
-const int bLow = 27;
-const int bHigh = 30;
+const int bLow = 22;
+const int bHigh = 28;
 
-const int cLow = 90;
-const int cHigh = 105;
 //
 //=====================================================================================================================
 
@@ -115,24 +114,30 @@ void loop() {
       Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
     }
 
-    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g > r) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+      count++;
+      Serial.print("count");
+    } else {
+      count = 0;
+      if ((millis() - pastTime) > 500) {
+        Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+        flag = true;
+        }
+      }
+    if (count >= 3){
       Bot.ToPosition("S2", cSorterServoLeft);
       Serial.print("Green");  // Moves servo so stone slides into collection
       flag = false;           //reset flag
       pastTime = millis();
-    } else {
-      if ((millis() - pastTime) > 500) {
-        Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
-        flag = true;
-      }
+      count = 0;
     }
   }
-  changeLEDColour();  // update LED colour to match what the TCS34725 is reading
+  //changeLEDColour();  // update LED colour to match what the TCS34725 is reading
 }
 
 
-void changeLEDColour() {
+/*void changeLEDColour() {
   SmartLEDs.setBrightness(150);                          // set brightness of LED
   SmartLEDs.setPixelColor(0, SmartLEDs.Color(r, g, b));  // set pixel colours to colour sensor reading
   SmartLEDs.show();                                      // update LED
-}
+}*/
