@@ -38,8 +38,6 @@ const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 //
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
-// Port pin constants
-#define SORTER_SERVO 41  // GPIO41 pin 34 (J41) Servo 1
 
 const int cSorterServoRight = 1400;  // Value for shoulder of arm fully up
 const int cSorterServoLeft = 1150;   // Value for shoulder of arm fully down
@@ -115,7 +113,7 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_2_4MS, TCS347
 bool tcsFlag = 0;  // TCS34725 flag: 1 = connected; 0 = not found
 
 // Motor, encoder, and IR objects (classes defined in MSE2202_Lib)
-Motion Bot = Motion();  // Instance of Motion for servo control
+Motion Bot = Motion();    // Instance of Motion for servo control
 Motion Wheel = Motion();  // Instance of Motion for wheel control
 
 void setup() {
@@ -126,6 +124,7 @@ void setup() {
 
   // Set up bot motors and encoders
   Wheel.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
+  Wheel.motorBegin()
 
   // Set up SmartLED
   SmartLEDs.begin();                                     // initialize smart LEDs object
@@ -151,6 +150,24 @@ void setup() {
 }
 
 void loop() {
+  //COLOUR CODE
+  //=================================================================================================================================
+  digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
+  if (tcsFlag) {                                    // if colour sensor initialized
+    tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
+
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g > r) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+      Bot.ToPosition("S1", cSorterServoLeft);
+      Serial.println("Green");  // Moves servo so stone slides into collection
+      pastTime = millis();
+    } else {
+      if ((millis() - pastTime) > 500) {
+        Bot.ToPosition("S1", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+      }
+    }
+  }
+  //=================================================================================================================================
+
   long pos[] = { 0, 0 };  // current motor positions
   int pot = 0;            // raw ADC value from pot
 
@@ -224,24 +241,6 @@ void loop() {
         break;
 
       case 1:  // Run robot
-        //COLOUR CODE
-        //=================================================================================================================================
-        digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
-        if (tcsFlag) {                                    // if colour sensor initialized
-          tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
-
-          if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g > r) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
-            Bot.ToPosition("S1", cSorterServoLeft);
-            Serial.println("Green");  // Moves servo so stone slides into collection
-            pastTime = millis();
-          } else {
-            if ((millis() - pastTime) > 500) {
-              Bot.ToPosition("S1", cSorterServoRight);  // Moves servo so stone slides into disposal tube
-            }
-          }
-        }
-        //=================================================================================================================================
-
         switch (driveModeIndex) {
           case 0:
             if (timeUp2sec) {  // pause for 2 sec before running case 1 code
