@@ -17,6 +17,7 @@ void Indicator();  // for mode/heartbeat on Smart LED
 #define LEFT_MOTOR_B 36   // GPIO36 pin 29 (J36) Motor 1 B
 #define RIGHT_MOTOR_A 37  // GPIO37 pin 30 (J37) Motor 2 A
 #define RIGHT_MOTOR_B 38  // GPIO38 pin 31 (J38) Motor 2 B
+#define MODE_BUTTON 0     // GPIO0  pin 27 for Push Button 1
 
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
@@ -26,13 +27,12 @@ const int cMaxPWM = pow(2, cPWMRes) - 1;  // PWM value for maximum speed
 const int cCountsRev = 1096;              // encoder pulses per motor revolution
 const double cDistPerRev = 13.2;          // distance travelled by robot in 1 full revolution of the motor (1096 counts = 13.2 cm)
 
-const int cSmartLED = 21;        // when DIP switch S1-4 is on, SMART LED is connected to GPIO21
-const int cSmartLEDCount = 1;    // number of Smart LEDs in use
-const int cSDA = 47;             // GPIO pin for I2C data
-const int cSCL = 48;             // GPIO pin for I2C clock
-const int cTCSLED = 14;          // GPIO pin for LED on TCS34725
-const int cLEDSwitch = 46;       // DIP switch S1-2 controls LED on TCS32725
-const int cDisplayUpdate = 100;  // update interval for Smart LED in milliseconds
+const int cSmartLED = 21;      // when DIP switch S1-4 is on, SMART LED is connected to GPIO21
+const int cSmartLEDCount = 1;  // number of Smart LEDs in use
+const int cSDA = 47;           // GPIO pin for I2C data
+const int cSCL = 48;           // GPIO pin for I2C clock
+const int cTCSLED = 14;        // GPIO pin for LED on TCS34725
+const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 
 //=====================================================================================================================
 //
@@ -115,13 +115,17 @@ Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_2_4MS, TCS347
 bool tcsFlag = 0;  // TCS34725 flag: 1 = connected; 0 = not found
 
 // Motor, encoder, and IR objects (classes defined in MSE2202_Lib)
-Motion Bot = Motion();  // Instance of Motion for wheel control
+Motion Bot = Motion();  // Instance of Motion for servo control
+Motion Wheel = Motion();  // Instance of Motion for wheel control
 
 void setup() {
   Serial.begin(115200);  // Standard baud rate for ESP32 serial monitor
 
   // Set up servos
   Bot.servoBegin("S1", SORTER_SERVO);  // set up shoulder servo
+
+  // Set up bot motors and encoders
+  Wheel.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
 
   // Set up SmartLED
   SmartLEDs.begin();                                     // initialize smart LEDs object
@@ -215,15 +219,16 @@ void loop() {
 
     switch (robotModeIndex) {
       case 0:  // Robot stopped
-        Bot.Stop("D1");
-        Bot.ToPosition("S2", cSorterServoLeft);
+        Bot.ToPosition("S1", cSorterServoLeft);
+        Wheel.Stop("D1");
         timeUp2sec = false;  // reset 2 second timer
         break;
 
       case 1:  // Run robot
+        Bot.ToPosition("S1", cSorterServoRight);
 
-        Bot.ToPosition("S2", cSorterServoRight);
-
+        //COLOUR CODE
+        //=================================================================================================================================
         digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
         if (tcsFlag) {                                    // if colour sensor initialized
           tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
@@ -238,6 +243,7 @@ void loop() {
             }
           }
         }
+        //=================================================================================================================================
 
         switch (driveModeIndex) {
           case 0:
@@ -252,7 +258,7 @@ void loop() {
             break;
 
           case 1:
-            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -262,7 +268,7 @@ void loop() {
             break;
 
           case 2:
-            Bot.Stop("D1");
+            Wheel.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -272,7 +278,7 @@ void loop() {
             break;
 
           case 3:
-            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -282,7 +288,7 @@ void loop() {
             break;
 
           case 4:
-            Bot.Stop("D1");
+            Wheel.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -292,7 +298,7 @@ void loop() {
             break;
 
           case 5:
-            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -302,7 +308,7 @@ void loop() {
             break;
 
           case 6:
-            Bot.Stop("D1");
+            Wheel.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -312,7 +318,7 @@ void loop() {
             break;
 
           case 7:
-            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -322,7 +328,7 @@ void loop() {
             break;
 
           case 8:
-            Bot.Stop("D1");
+            Wheel.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -332,7 +338,7 @@ void loop() {
             break;
 
           case 9:
-            Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
+            Wheel.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
             if (tc1Up) {
               driveModeIndex++;
               tc2 = 0;
@@ -341,7 +347,7 @@ void loop() {
             break;
 
           case 10:
-            Bot.Stop("D1");
+            Wheel.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex = 1;
