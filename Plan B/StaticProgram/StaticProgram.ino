@@ -66,14 +66,14 @@ unsigned long pastTime = 0;  // var to store time
 int count = 0;
 
 // VARIABLES FOR GREEN
-const int rLow = 25;
-const int rHigh = 28;
+const int rLow = 24;
+const int rHigh = 30;
 
 const int gLow = 28;
-const int gHigh = 36;
+const int gHigh = 34;
 
-const int bLow = 21;
-const int bHigh = 30;
+const int bLow = 22;
+const int bHigh = 28;
 
 const int cLow = 72;
 const int cHigh = 95;
@@ -129,9 +129,7 @@ unsigned int modeIndicator[2] = {
 };
 
 // Motor, encoder, and IR objects (classes defined in MSE2202_Lib)
-Motion Wheel = Motion();             // Instance of Motion for wheel control
-Encoders LeftEncoder = Encoders();   // Instance of Encoders for left encoder data
-Encoders RightEncoder = Encoders();  // Instance of Encoders for right encoder data
+Motion Bot = Motion();  // Instance of Motion for wheel control
 
 // Variables
 uint16_t r, g, b, c;  // RGBC values from TCS34725
@@ -147,7 +145,7 @@ void setup() {
 #endif
 
   // Set up servos
-  Wheel.servoBegin("S2", SORTER_SERVO);  // set up shoulder servo, Note should probably change that to S1
+  Bot.servoBegin("S2", SORTER_SERVO);  // set up shoulder servo
 
   Wire.setPins(cSDA, cSCL);           // set I2C pins for TCS34725
   pinMode(cTCSLED, OUTPUT);           // configure GPIO to control LED on TCS34725
@@ -163,9 +161,7 @@ void setup() {
   }
 
   // Set up bot motors and encoders
-  Wheel.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
-  LeftEncoder.Begin(ENCODER_LEFT_A, ENCODER_LEFT_B, &Wheel.iLeftMotorRunning);       // set up left encoder
-  RightEncoder.Begin(ENCODER_RIGHT_A, ENCODER_RIGHT_B, &Wheel.iRightMotorRunning);   // set up right encoder
+  Bot.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
 
   // Set up SmartLED
   SmartLEDs.begin();                                     // initialize smart LEDs object (REQUIRED)
@@ -180,47 +176,6 @@ void setup() {
 }
 
 void loop() {
-
-  // Colour Sensor Code:
-  //=====================================================================================================================
-  unsigned long currentTime = millis();  // Current time
-
-  digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
-  if (tcsFlag) {                                    // if colour sensor initialized
-    tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
-#ifdef PRINT_COLOUR
-    if (!((r >= 35 && r <= 37) && (g >= 37 && g <= 39) && (b >= 32 && b <= 34) && (c >= 108 && c <= 110))) {
-      Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
-    }
-#endif
-
-    if (flag == true) {
-      pastTime = millis();
-      Wheel.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
-    }
-
-    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
-      count++;
-      Serial.println("count");
-    } else {
-      //count = 0;
-      if ((millis() - pastTime) > 500) {
-        Wheel.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
-        flag = true;
-      }
-    }
-    if (count >= 1) {
-      Wheel.ToPosition("S2", cSorterServoLeft);
-      Serial.println("Green");  // Moves servo so stone slides into collection
-      flag = false;             // reset flag
-      pastTime = millis();
-      count = 0;
-    }
-  }
-  //changeLEDColour(); // update LED colour to match what the TCS34725 is reading
-
-  //=====================================================================================================================
-
   long pos[] = { 0, 0 };  // current motor positions
   int pot = 0;            // raw ADC value from pot
 
@@ -292,13 +247,37 @@ void loop() {
 
     switch (robotModeIndex) {
       case 0:  // Robot stopped
-        Wheel.Stop("D1");
-        LeftEncoder.clearEncoder();  // clear encoder counts
-        RightEncoder.clearEncoder();
+        Bot.Stop("D1");
+        Bot.ToPosition("S2", cSorterServoLeft);
         timeUp2sec = false;  // reset 2 second timer
         break;
 
       case 1:  // Run robot
+
+        Bot.ToPosition("S2", cSorterServoRight);
+
+        // // Colour Sensor Code:
+        // //=====================================================================================================================
+        // digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
+        // if (tcsFlag) {                                    // if colour sensor initialized
+        //   tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
+
+        //   if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+        //     Bot.ToPosition("S2", cSorterServoLeft);
+        //     Serial.println("Green");  // Moves servo so stone slides into collection
+        //     pastTime = millis();
+        //     delay(500);
+        //   } else {
+        //     // Serial.println("Not Green");  // Moves servo so stone slides into collection
+        //     if ((millis() - pastTime) > 500) {
+        //       Bot.ToPosition("S2", cSorterServoRight);  // Moves servo so stone slides into disposal tube
+        //     }
+        //   }
+        // }
+        // //=====================================================================================================================
+
+
+
         switch (driveModeIndex) {
           case 0:
             if (timeUp2sec) {  // pause for 2 sec before running case 1 code
@@ -312,7 +291,7 @@ void loop() {
             break;
 
           case 1:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -322,7 +301,7 @@ void loop() {
             break;
 
           case 2:
-            Wheel.Stop("D1");
+            Bot.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -332,7 +311,7 @@ void loop() {
             break;
 
           case 3:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -342,7 +321,7 @@ void loop() {
             break;
 
           case 4:
-            Wheel.Stop("D1");
+            Bot.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -352,7 +331,7 @@ void loop() {
             break;
 
           case 5:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -362,7 +341,7 @@ void loop() {
             break;
 
           case 6:
-            Wheel.Stop("D1");
+            Bot.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -372,7 +351,7 @@ void loop() {
             break;
 
           case 7:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
 
             if (tc3Up) {
               driveModeIndex++;
@@ -382,7 +361,7 @@ void loop() {
             break;
 
           case 8:
-            Wheel.Stop("D1");
+            Bot.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex++;
@@ -392,7 +371,7 @@ void loop() {
             break;
 
           case 9:
-            Wheel.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
+            Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
             if (tc1Up) {
               driveModeIndex++;
               tc2 = 0;
@@ -401,7 +380,7 @@ void loop() {
             break;
 
           case 10:
-            Wheel.Stop("D1");
+            Bot.Stop("D1");
 
             if (tc2Up) {
               driveModeIndex = 1;
@@ -431,10 +410,4 @@ void loop() {
 void Indicator() {
   SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]);  // set pixel colors to = mode
   SmartLEDs.show();                                           // send the updated pixel colors to the hardware
-}
-
-void changeLEDColour() {
-  SmartLEDs.setBrightness(150);                          // set brightness of LED
-  SmartLEDs.setPixelColor(0, SmartLEDs.Color(r, g, b));  // set pixel colours to colour sensor reading
-  SmartLEDs.show();                                      // update LED
 }
