@@ -5,11 +5,11 @@
 #include <Wire.h>
 #include <SPI.h>
 #include "Adafruit_TCS34725.h"
-#include <MSE2202_Lib.h>
 
 // Function delcaration
 
 void Indicator();  // for mode/heartbeat on Smart LED
+void setMotor(int dir, int pwm, int in1, int in2);
 
 // Port pin constants
 #define SORTER_SERVO 41   // GPIO41 pin 34 (J41) Servo 1
@@ -20,12 +20,19 @@ void Indicator();  // for mode/heartbeat on Smart LED
 #define MODE_BUTTON 0     // GPIO0  pin 27 for Push Button 1
 
 // Constants
-const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
-const int cPWMRes = 8;                    // bit resolution for PWM
-const int cMinPWM = 150;                  // PWM value for minimum speed that turns motor
-const int cMaxPWM = pow(2, cPWMRes) - 1;  // PWM value for maximum speed
-const int cCountsRev = 1096;              // encoder pulses per motor revolution
-const double cDistPerRev = 13.2;          // distance travelled by robot in 1 full revolution of the motor (1096 counts = 13.2 cm)
+const int cDisplayUpdate = 100;                          // update interval for Smart LED in milliseconds
+const int cNumMotors = 2;                                // number of DC motors
+const int cIN1Pin[] = { LEFT_MOTOR_A, RIGHT_MOTOR_A };   // GPIO pin(s) for INT1
+const int cIN1Chan[] = { 0, 1 };                         // PWM channe(s) for INT1
+const int c2IN2Pin[] = { LEFT_MOTOR_B, RIGHT_MOTOR_B };  // GPIO pin(s) for INT2
+const int cIN2Chan[] = { 2, 3 };                         // PWM channel(s) for INT2
+const int cPWMRes = 8;                                   // bit resolution for PWM
+const int cMinPWM = 150;                                 // PWM value for minimum speed that turns motor
+const int cMaxPWM = pow(2, cPWMRes) - 1;                 // PWM value for maximum speed
+const int cPWMFreq = 20000;                              // frequency of PWM signal
+const int cCountsRev = 1096;                             // encoder pulses per motor revolution
+const double cDistPerRev = 13.2;                         // distance travelled by robot in 1 full revolution of the motor (1096 counts = 13.2 cm)
+const int cServoChannel = 5;                             // PWM channel used for the RC servo motor
 
 const int cSmartLED = 21;      // when DIP switch S1-4 is on, SMART LED is connected to GPIO21
 const int cSmartLEDCount = 1;  // number of Smart LEDs in use
@@ -112,21 +119,26 @@ unsigned int modeIndicator[2] = {
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_2_4MS, TCS34725_GAIN_4X);
 bool tcsFlag = 0;  // TCS34725 flag: 1 = connected; 0 = not found
 
-// Motor, encoder, and IR objects (classes defined in MSE2202_Lib)
-Motion Bot = Motion();    // Instance of Motion for servo control
-Motion Wheel = Motion();  // Instance of Motion for wheel control
-
 void setup() {
   Serial.begin(115200);  // Standard baud rate for ESP32 serial monitor
 
   // Set up servos
-  Bot.servoBegin("S1", SORTER_SERVO);  // set up shoulder servo
+  // Set up servo
+  pinMode(SORTER_SERVO, OUTPUT);               // configure servo GPIO for output
+  ledcSetup(cServoChannel, 50, 14);            // configure PWM channel frequency and resolution
+  ledcAttachPin(SORTER_SERVO, cServoChannel);  // attach INT1 GPIO to PWM channel
 
-  // Set up bot motors and encoders
-  Wheel.driveBegin("D1", LEFT_MOTOR_A, LEFT_MOTOR_B, RIGHT_MOTOR_A, RIGHT_MOTOR_B);  // set up motors as Drive 1
+  // Set up bot motors
+  // Set up motors and encoders
+  for (int k = 0; k < cNumMotors; k++) {
+    ledcAttachPin(cIN1Pin[k], cIN1Chan[k]);     // attach INT1 GPIO to PWM channel
+    ledcSetup(cIN1Chan[k], cPWMFreq, cPWMRes);  // configure PWM channel frequency and resolution
+    ledcAttachPin(c2IN2Pin[k], cIN2Chan[k]);    // attach INT2 GPIO to PWM channel
+    ledcSetup(cIN2Chan[k], cPWMFreq, cPWMRes);  // configure PWM channel frequency and resolution
+  }
 
-    // Set up SmartLED
-    SmartLEDs.begin();                                   // initialize smart LEDs object
+  // Set up SmartLED
+  SmartLEDs.begin();                                     // initialize smart LEDs object
   SmartLEDs.clear();                                     // clear pixel
   SmartLEDs.setPixelColor(0, SmartLEDs.Color(0, 0, 0));  // set pixel colours to black (off)
   SmartLEDs.setBrightness(0);                            // set brightness [0-255]
@@ -149,9 +161,23 @@ void setup() {
 }
 
 void loop() {
+  // COLOUR CODE
+  //=================================================================================================================================
+  digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
+  if (tcsFlag) {                                    // if colour sensor initialized
+    tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
 
-  long pos[] = { 0, 0 };  // current motor positions
-  int pot = 0;            // raw ADC value from pot
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g > r) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+      ledcWrite(cServoChannel, cSorterServoLeft);
+      Serial.println("Green");  // Moves servo so stone slides into collection
+      pastTime = millis();
+    } else {
+      if ((millis() - pastTime) > 500) {
+        ledcWrite(cServoChannel, cSorterServoRight);  // Moves servo so stone slides into disposal tube
+      }
+    }
+  }
+  //=================================================================================================================================
 
   currentMicros = micros();                        // get current time in microseconds
   if ((currentMicros - previousMicros) >= 1000) {  // enter when 1 ms has elapsed
@@ -217,29 +243,13 @@ void loop() {
     // 1 = Press mode button once to enter. Run robot
 
     switch (robotModeIndex) {
-      case 0:  // Robot stopped
-        Wheel.Stop("D1");
-        timeUp2sec = false;  // reset 2 second timer
+      case 0:                                      // Robot stopped
+        setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
+        setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
+        timeUp2sec = false;                        // reset 2 second timer
         break;
 
       case 1:  // Run robot
-        //COLOUR CODE
-        //=================================================================================================================================
-        digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
-        if (tcsFlag) {                                    // if colour sensor initialized
-          tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
-
-          if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g > r) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
-            Bot.ToPosition("S1", cSorterServoLeft);
-            Serial.println("Green");  // Moves servo so stone slides into collection
-            pastTime = millis();
-          } else {
-            if ((millis() - pastTime) > 500) {
-              Bot.ToPosition("S1", cSorterServoRight);  // Moves servo so stone slides into disposal tube
-            }
-          }
-        }
-        //=================================================================================================================================
         switch (driveModeIndex) {
           case 0:
             if (timeUp2sec) {  // pause for 2 sec before running case 1 code
@@ -253,7 +263,8 @@ void loop() {
             break;
 
           case 1:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            setMotor(1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);    // left motor forward
+            setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
               driveModeIndex++;
@@ -263,7 +274,8 @@ void loop() {
             break;
 
           case 2:
-            Wheel.Stop("D1");
+            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
+            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
               driveModeIndex++;
@@ -273,7 +285,8 @@ void loop() {
             break;
 
           case 3:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            setMotor(1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);    // left motor forward
+            setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
               driveModeIndex++;
@@ -283,7 +296,8 @@ void loop() {
             break;
 
           case 4:
-            Wheel.Stop("D1");
+            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
+            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
               driveModeIndex++;
@@ -293,7 +307,8 @@ void loop() {
             break;
 
           case 5:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            setMotor(1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);    // left motor forward
+            setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
               driveModeIndex++;
@@ -303,7 +318,8 @@ void loop() {
             break;
 
           case 6:
-            Wheel.Stop("D1");
+            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
+            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
               driveModeIndex++;
@@ -313,7 +329,8 @@ void loop() {
             break;
 
           case 7:
-            Wheel.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // Spin collection wheel
+            setMotor(1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);    // left motor forward
+            setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
               driveModeIndex++;
@@ -323,7 +340,8 @@ void loop() {
             break;
 
           case 8:
-            Wheel.Stop("D1");
+            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
+            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
               driveModeIndex++;
@@ -333,7 +351,8 @@ void loop() {
             break;
 
           case 9:
-            Wheel.Reverse("D1", leftDriveSpeed, rightDriveSpeed);
+            setMotor(-1, cMaxPWM - 5, cIN1Chan[0], cIN2Chan[0]);  // left motor reverse
+            setMotor(1, cMaxPWM, cIN1Chan[1], cIN2Chan[1]);       // right motor forward (opposite dir from right)
             if (tc1Up) {
               driveModeIndex++;
               tc2 = 0;
@@ -342,7 +361,8 @@ void loop() {
             break;
 
           case 10:
-            Wheel.Stop("D1");
+            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
+            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
               driveModeIndex = 1;
@@ -365,6 +385,20 @@ void loop() {
       SmartLEDs.setBrightness(LEDBrightnessLevels[LEDBrightnessIndex]);  // set brightness of heartbeat LED
       Indicator();                                                       // update LED
     }
+  }
+}
+
+// send motor control signals, based on direction and pwm (speed)
+void setMotor(int dir, int pwm, int in1, int in2) {
+  if (dir == 1) {  // forward
+    ledcWrite(in1, pwm);
+    ledcWrite(in2, 0);
+  } else if (dir == -1) {  // reverse
+    ledcWrite(in1, 0);
+    ledcWrite(in2, pwm);
+  } else {  // stop
+    ledcWrite(in1, 0);
+    ledcWrite(in2, 0);
   }
 }
 
