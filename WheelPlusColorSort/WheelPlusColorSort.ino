@@ -219,14 +219,11 @@ void loop() {
 
     switch (robotModeIndex) {
       case 0:  // Robot stopped
-        Bot.ToPosition("S1", cSorterServoLeft);
         Wheel.Stop("D1");
         timeUp2sec = false;  // reset 2 second timer
         break;
 
       case 1:  // Run robot
-        Bot.ToPosition("S1", cSorterServoRight);
-
         //COLOUR CODE
         //=================================================================================================================================
         digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
