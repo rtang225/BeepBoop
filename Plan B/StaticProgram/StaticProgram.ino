@@ -65,18 +65,15 @@ bool flag = true;           // delay flag
 unsigned long pastTime = 0; // var to store time
 int count = 0;
 
-// VARIABLES FOR GREEN
-const int rLow = 23;
-const int rHigh = 33;
+//VARIABLES FOR GREEN
+const int rLow = 24;
+const int rHigh = 30;
 
-const int gLow = 30;
-const int gHigh = 40;
+const int gLow = 26;
+const int gHigh = 34;
 
-const int bLow = 21;
-const int bHigh = 31;
-
-const int cLow = 76;
-const int cHigh = 120;
+const int bLow = 22;
+const int bHigh = 28;
 
 //
 //=====================================================================================================================
@@ -203,8 +200,7 @@ void loop()
       Wheel.ToPosition("S2", cSorterServoRight); // Moves servo so stone slides into disposal tube
     }
 
-    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh))
-    { // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g > r) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
       count++;
       Serial.print("count");
     }
@@ -226,7 +222,6 @@ void loop()
       count = 0;
     }
   }
-  changeLEDColour(); // update LED colour to match what the TCS34725 is reading
 
   //=====================================================================================================================
 
@@ -471,11 +466,4 @@ void Indicator()
 {
   SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]); // set pixel colors to = mode
   SmartLEDs.show();                                          // send the updated pixel colors to the hardware
-}
-
-void changeLEDColour()
-{
-  SmartLEDs.setBrightness(150);                         // set brightness of LED
-  SmartLEDs.setPixelColor(0, SmartLEDs.Color(r, g, b)); // set pixel colours to colour sensor reading
-  SmartLEDs.show();                                     // update LED
 }
