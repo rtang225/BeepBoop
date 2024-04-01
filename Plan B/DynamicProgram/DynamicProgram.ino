@@ -16,8 +16,9 @@ Controls:
 #include <NewPing.h>        // https://bitbucket.org/teckel12/arduino-new-ping/wiki/Home
 #include <MovingAverage.h>  // https://github.com/MaximilianKautzsch/MovingAverage
 
-// Function declarations
-void Indicator();                                  // for mode/heartbeat on Smart LED
+  // Function declarations
+  void
+  Indicator();                                     // for mode/heartbeat on Smart LED
 void setTarget(int dir, long pos, double dist);    // sets encoder position target for movement
 bool checkConsistency(int parameter, int cutoff);  // checks for consistency of a received signal
 
@@ -61,17 +62,17 @@ const double cDistPerRev = 13.2;          // distance travelled by robot in 1 fu
 // const int cClawServoClosed = 2150;  // Value for closed position of claw
 // const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
 // const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
-const int cLeftAdjust = 0;      // Amount to slow down left motor relative to right
-const int cRightAdjust = 7.35;  // Amount to slow down right motor relative to left
-float turningDistance = 2.05;   // Turning distance counter
+const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
+const int cRightAdjust = 9;            // Amount to slow down right motor relative to left
+const float turningDistance = 2.1;     // Turning distance counter
+const float turningMultiplier = 0.70;  // Multiplier for bot turning speed when searching for IR signal
 
 const int detectionDistance = 400;  // Ultrasonic range
 
 const int cGateServoOpen = 1700;    // Value for open position of claw
 const int cGateServoClosed = 1000;  // Value for closed position of claw
 
-const float cAlpha = 0.1;   // Constant for exponential moving average filter
-const int cWindowSize = 7;  // Moving average filter window size
+const int cWindowSize = 6;  // Moving average filter window size
 //
 //=====================================================================================================================
 
@@ -311,8 +312,8 @@ void loop() {
                   }
                   break;
                 case 4:                                             // Checks if a character is received at all
-                  leftDriveSpeed = cMaxPWM * 0.76;                  // Slow down left wheel drive speed
-                  rightDriveSpeed = cMaxPWM * 0.76;                 // Slow down right wheel drive speed
+                  leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
+                  rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // Turn left
                   // Checks for consistency of signal being received from the IR beacon
                   if (Scan.Available()) {  // Checks if a scan is available
@@ -338,8 +339,8 @@ void loop() {
                   }
                   break;
                 case 6:                                             // Checks if the signal is a U
-                  leftDriveSpeed = cMaxPWM * 0.76;                  // Slow down left wheel drive speed
-                  rightDriveSpeed = cMaxPWM * 0.76;                 // Slow down right wheel drive speed
+                  leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
+                  rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // Turn left
                   // Check for consistency of signal being received from the IR beacon
                   if (Scan.Available()) {  // Checks if a scan is available
@@ -347,7 +348,7 @@ void loop() {
                     // Serial.println(receivedChar);
                     if (receivedChar == 'U') {  // Checks if the received character is a U
                       irUCounter++;
-                      if (irUCounter > 16) {  // Checks for 16 consecutive U's
+                      if (irUCounter > 5) {  // Checks for 16 consecutive U's
                         Bot.Stop("D1");
                         driveIndex++;
                       }
@@ -366,7 +367,7 @@ void loop() {
                   // Checks for consistency of signal being received from sonar
                   if (filter.readAverage(cWindowSize) <= 2.50) {
                     sonarCounter++;
-                    if (sonarCounter > 6) {  // Check for 6 consecutive readings <= 2.50cm
+                    if (sonarCounter > 3) {  // Check for 6 consecutive readings <= 2.50cm
                       Bot.Stop("D1");
                       driveIndex++;  // Move to next case
                     }
