@@ -16,11 +16,9 @@ Controls:
 #include <NewPing.h>        // https://bitbucket.org/teckel12/arduino-new-ping/wiki/Home
 #include <MovingAverage.h>  // https://github.com/MaximilianKautzsch/MovingAverage
 
-  // Function declarations
-  void
-  Indicator();                                     // for mode/heartbeat on Smart LED
+// Function declarations
+void Indicator();                                  // for mode/heartbeat on Smart LED
 void setTarget(int dir, long pos, double dist);    // sets encoder position target for movement
-bool checkConsistency(int parameter, int cutoff);  // checks for consistency of a received signal
 
 // Port pin constants
 #define LEFT_MOTOR_A 35        // GPIO35 pin 28 (J35) Motor 1 A
@@ -72,7 +70,7 @@ const int detectionDistance = 400;  // Ultrasonic range
 const int cGateServoOpen = 1700;    // Value for open position of claw
 const int cGateServoClosed = 1000;  // Value for closed position of claw
 
-const int cWindowSize = 6;  // Moving average filter window size
+const int cWindowSize = 7;  // Moving average filter window size
 //
 //=====================================================================================================================
 
@@ -323,7 +321,7 @@ void loop() {
                       charCounter++;
                       if (charCounter > 5) {  // Checks for 5 consecutive characters
                         Bot.Stop("D1");
-                        setTarget(-1, RightEncoder.lRawEncoderCount, 50);
+                        setTarget(-1, RightEncoder.lRawEncoderCount, 40);
                         driveIndex++;
                       }
                     } else {
@@ -417,7 +415,4 @@ void setTarget(int dir, long pos, double dist) {
   if (dir == -1) {  // Backwards
     target = pos - ((dist / cDistPerRev) * cCountsRev);
   }
-}
-
-bool checkConsistency(int parameter, int cutoff) {
 }
