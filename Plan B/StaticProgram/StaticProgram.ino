@@ -10,6 +10,7 @@
 
 void Indicator();  // for mode/heartbeat on Smart LED
 void setMotor(int dir, int pwm, int in1, int in2);
+long degreesToDutyCycle(int deg);
 
 // Port pin constants
 #define SORTER_SERVO 41   // GPIO41 pin 34 (J41) Servo 1
@@ -20,6 +21,7 @@ void setMotor(int dir, int pwm, int in1, int in2);
 #define MODE_BUTTON 0     // GPIO0  pin 27 for Push Button 1
 
 // Constants
+const int cPotPin = 1;                                   // when DIP switch S1-3 is on, pot (R1) is connected to GPIO1 (ADC1-0)
 const int cDisplayUpdate = 100;                          // update interval for Smart LED in milliseconds
 const int cNumMotors = 2;                                // number of DC motors
 const int cIN1Pin[] = { LEFT_MOTOR_A, RIGHT_MOTOR_A };   // GPIO pin(s) for INT1
@@ -33,6 +35,8 @@ const int cPWMFreq = 20000;                              // frequency of PWM sig
 const int cCountsRev = 1096;                             // encoder pulses per motor revolution
 const double cDistPerRev = 13.2;                         // distance travelled by robot in 1 full revolution of the motor (1096 counts = 13.2 cm)
 const int cServoChannel = 5;                             // PWM channel used for the RC servo motor
+const long cMinDutyCycle = 400;                          // duty cycle for 0 degrees
+const long cMaxDutyCycle = 2100;                         // duty cycle for 180 degrees
 
 const int cSmartLED = 21;      // when DIP switch S1-4 is on, SMART LED is connected to GPIO21
 const int cSmartLEDCount = 1;  // number of Smart LEDs in use
@@ -46,8 +50,8 @@ const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 
-const int cSorterServoRight = 1650;  // Value for shoulder of arm fully up
-const int cSorterServoLeft = 1200;   // Value for shoulder of arm fully down
+const int cSorterServoRight = 960;  // Value for shoulder of arm fully up
+const int cSorterServoLeft = 560;   // Value for shoulder of arm fully down
 
 unsigned long pastTime = 0;  // var to store time
 int count = 0;
@@ -85,7 +89,11 @@ double target;                     // target encoder count to keep track of dist
 unsigned long prevTime;            // Get the current time in milliseconds
 float driveDistance = 80;          // Forward/backward drive distance
 float turningDistance = 4.4;       // Turning distance counter
-int driveCounter = 0;              // Counter for drive circles
+int driveCounter = 0;              // Counter for drive program
+int potPos = 0;                    // input value from the potentiometer
+
+// Variables
+uint16_t r, g, b, c;  // RGBC values from TCS34725
 
 // Variables
 uint16_t r, g, b, c;  // RGBC values from TCS34725
@@ -108,10 +116,11 @@ unsigned char LEDBrightnessLevels[] = { 5, 15, 30, 45, 60, 75, 90, 105, 120, 135
 
 int robotModeIndex = 0;  // robot operational state
 int driveModeIndex = 0;
-unsigned int modeIndicator[2] = {
+unsigned int modeIndicator[3] = {
   // colours for different modes
-  SmartLEDs.Color(255, 0, 0),  //   red - stop
-  SmartLEDs.Color(0, 255, 0),  //   green - run
+  SmartLEDs.Color(255, 0, 0),    //   red - stop
+  SmartLEDs.Color(0, 100, 255),  //   cyan - tune servo pos
+  SmartLEDs.Color(200, 0, 200),  //   purple - run
 };
 
 // TCS34725 colour sensor with 2.4 ms integration time and gain of 4
@@ -122,7 +131,9 @@ bool tcsFlag = 0;  // TCS34725 flag: 1 = connected; 0 = not found
 void setup() {
   Serial.begin(115200);  // Standard baud rate for ESP32 serial monitor
 
-  // Set up servos
+  // Setup potentiometer
+  pinMode(cPotPin, INPUT);  // configure potentiometer pin for input
+
   // Set up servo
   pinMode(SORTER_SERVO, OUTPUT);               // configure servo GPIO for output
   ledcSetup(cServoChannel, 50, 14);            // configure PWM channel frequency and resolution
@@ -166,19 +177,21 @@ void loop() {
   digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
   if (tcsFlag) {                                    // if colour sensor initialized
     tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
-    Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
+    //Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
 
-    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g > r) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g - b > 3) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
       ledcWrite(cServoChannel, cSorterServoLeft);
       Serial.println("Green");  // Moves servo so stone slides into collection
       pastTime = millis();
     } else {
-      if ((millis() - pastTime) > 500) {
+      if ((millis() - pastTime) > 600) {
         ledcWrite(cServoChannel, cSorterServoRight);  // Moves servo so stone slides into disposal tube
       }
     }
   }
   //=================================================================================================================================
+
+  int pot = 0;  // raw ADC value from pot
 
   currentMicros = micros();                        // get current time in microseconds
   if ((currentMicros - previousMicros) >= 1000) {  // enter when 1 ms has elapsed
@@ -186,14 +199,14 @@ void loop() {
 
     // 500ms second timer
     tc3 = tc3 + 1;   // increment 500ms second timer count
-    if (tc3 > 10) {  // if 500ms seconds have elapsed
+    if (tc3 > 14) {  // if 500ms seconds have elapsed
       tc3 = 0;       // reset 500ms second timer count
       tc3Up = true;  // indicate that 500ms seconds have elapsed
     }
 
     // 500ms second timer
     tc2 = tc2 + 1;   // increment 500ms second timer count
-    if (tc2 > 100) {  // if 500ms seconds have elapsed
+    if (tc2 > 70) {  // if 500ms seconds have elapsed
       tc2 = 0;       // reset 500ms second timer count
       tc2Up = true;  // indicate that 500ms seconds have elapsed
     }
@@ -232,7 +245,7 @@ void loop() {
         if (modePBDebounce >= 1025) {           // if pushbutton was released for 25 mS
           modePBDebounce = 0;                   // reset debounce timer count
           robotModeIndex++;                     // switch to next mode
-          robotModeIndex = robotModeIndex & 1;  // keep mode index between 0 and 1
+          robotModeIndex = robotModeIndex % 3;  // keep mode index between 0 and 2
           timerCount2sec = 0;                   // reset 3 second timer count
           timeUp2sec = false;                   // reset 3 second timer
         }
@@ -250,12 +263,16 @@ void loop() {
         timeUp2sec = false;                        // reset 2 second timer
         break;
 
-      case 1:  // Run robot
+      case 1:
+        mapPosition(analogRead(cPotPin));  // get desired servo postion from pot input
+        break;
+
+      case 2:  // Run robot
         switch (driveModeIndex) {
           case 0:
             if (timeUp2sec) {  // pause for 2 sec before running case 1 code
-              leftDriveSpeed = cMaxPWM - 40;
-              rightDriveSpeed = cMaxPWM - 40;
+              leftDriveSpeed = cMaxPWM - 20;
+              rightDriveSpeed = cMaxPWM - 20;
               driveModeIndex++;
               timeUp2sec = false;
               tc3 = 0;
@@ -375,6 +392,7 @@ void loop() {
         break;
     }
 
+
     // Update brightness of heartbeat display on SmartLED
     displayTime++;                                             // count milliseconds
     if (displayTime > cDisplayUpdate) {                        // when display update period has passed
@@ -407,4 +425,12 @@ void setMotor(int dir, int pwm, int in1, int in2) {
 void Indicator() {
   SmartLEDs.setPixelColor(0, modeIndicator[robotModeIndex]);  // set pixel colors to = mode
   SmartLEDs.show();                                           // send the updated pixel colors to the hardware
+}
+
+void mapPosition(int potPos) {
+  long position = map(potPos, 0, 4096, cMinDutyCycle, cMaxDutyCycle);  // convert to duty cycle
+  ledcWrite(cServoChannel, position);
+  Serial.println("PotPos: ");
+  Serial.println(position);
+
 }
