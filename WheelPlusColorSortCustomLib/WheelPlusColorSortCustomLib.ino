@@ -46,7 +46,7 @@ const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 
-const int cSorterServoRight = 1550;  // Value for shoulder of arm fully up
+const int cSorterServoRight = 1410;  // Value for shoulder of arm fully up
 const int cSorterServoLeft = 1200;   // Value for shoulder of arm fully down
 
 unsigned long pastTime = 0;  // var to store time
@@ -166,7 +166,7 @@ void loop() {
   digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
   if (tcsFlag) {                                    // if colour sensor initialized
     tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
-    Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
+    //Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
 
     if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g - b > 3) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
       ledcWrite(cServoChannel, cSorterServoLeft);
@@ -186,7 +186,7 @@ void loop() {
 
     // 500ms second timer
     tc3 = tc3 + 1;   // increment 500ms second timer count
-    if (tc3 > 10) {  // if 500ms seconds have elapsed
+    if (tc3 > 18) {  // if 500ms seconds have elapsed
       tc3 = 0;       // reset 500ms second timer count
       tc3Up = true;  // indicate that 500ms seconds have elapsed
     }
@@ -254,8 +254,8 @@ void loop() {
         switch (driveModeIndex) {
           case 0:
             if (timeUp2sec) {  // pause for 2 sec before running case 1 code
-              leftDriveSpeed = cMaxPWM - 60;
-              rightDriveSpeed = cMaxPWM - 60;
+              leftDriveSpeed = cMaxPWM - 70;
+              rightDriveSpeed = cMaxPWM - 70;
               driveModeIndex++;
               timeUp2sec = false;
               tc3 = 0;
