@@ -21,7 +21,7 @@ void Indicator();                                                              /
 #define POT_R1              1                                                  // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED           21                                                 // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT     1                                                  // number of SMART LEDs in use
-#define IR_DETECTOR         14                                                 // GPIO14 pin 17 (J14) IR detector input
+#define IR_DETECTOR         17                                                 // GPIO14 pin 17 (J14) IR detector input
 #define SHOULDER_SERVO      41                                                 // GPIO41 pin 34 (J41) Servo 1
 #define CLAW_SERVO          42                                                 // GPIO42 pin 35 (J42) Servo 2
 
@@ -239,7 +239,7 @@ void loop() {
                             driveIndex++; // Skips ball searching step if it finds the IR
                            }
                            else {
-                              Bot.Left("D1", leftDriveSpeed, rightDriveSpeed)
+                              Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);
                               if (RightEncoder.lRawEncoderCount >= target) { // Turn only a certain amount
                                  // Set new encoder target
                                  driveIndex = 0; // Repeat
