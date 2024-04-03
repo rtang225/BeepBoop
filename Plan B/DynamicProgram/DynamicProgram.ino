@@ -7,7 +7,7 @@ Controls:
 - Stone dispending
 */
 
-// #define DEBUG_ENCODER_COUNT 1
+#define DEBUG_ENCODER_COUNT 1
 // #define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
@@ -273,7 +273,7 @@ void loop() {
                   Bot.Stop("D1");                          // drive ID
                   Bot.ToPosition("S1", cGateServoClosed);  // Closes gate
 
-                  setTarget(1, RightEncoder.lRawEncoderCount, 125);  // set target to drive forward
+                  setTarget(1, RightEncoder.lRawEncoderCount, 175);  // set target to drive forward
                   driveIndex++;                                      // next state: drive forward
                   break;
 
@@ -291,18 +291,22 @@ void loop() {
 
                   if (RightEncoder.lRawEncoderCount <= target) {
                     driveCounter++;
+                    Serial.println(driveCounter);
                     if (driveCounter <= 7) {
-                      if (driveCounter <= 2 || driveCounter == 7) {
+                      if (driveCounter <= 2) {
                         driveDistance = 50;
                       } else if (driveCounter <= 4) {
                         driveDistance = 100;
                       } else if (driveCounter <= 6) {
                         driveDistance = 125;
+                      } else if (driveCounter == 7) {
+                        driveDistance = 25;
                       }
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                       driveIndex--;                                                // next state: drive forward
                     } else {
-                      setTarget(-1, RightEncoder.lRawEncoderCount, 5);
+                      setTarget(-1, RightEncoder.lRawEncoderCount, 25);
+                      Serial.println("BACKING UP, JUST BACKING UP, WE'RE JUST BACKING UP...");
                       driveIndex++;
                     }
                   }
@@ -348,10 +352,10 @@ void loop() {
                   // Check for consistency of signal being received from the IR beacon
                   if (Scan.Available()) {  // Checks if a scan is available
                     receivedChar = Scan.Get_IR_Data();
-                    // Serial.println(receivedChar);
+                    Serial.println(receivedChar);
                     if (receivedChar == 'U') {  // Checks if the received character is a U
                       irUCounter++;
-                      if (irUCounter > 5) {  // Checks for 16 consecutive U's
+                      if (irUCounter > 5) {  // Checks for 5 consecutive U's
                         Bot.Stop("D1");
                         driveIndex++;
                       }
@@ -364,9 +368,9 @@ void loop() {
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   sonarReading = sonar.ping_cm();
                   filter.add(sonarReading);  // Moving average filter
-                  // Serial.print(sonarReading);
-                  // Serial.print(", ");
-                  // Serial.println(filter.readAverage(cWindowSize));
+                  Serial.print(sonarReading);
+                  Serial.print(", ");
+                  Serial.println(filter.readAverage(cWindowSize));
                   // Checks for consistency of signal being received from sonar
                   if (filter.readAverage(cWindowSize) <= 2.50) {
                     sonarCounter++;
