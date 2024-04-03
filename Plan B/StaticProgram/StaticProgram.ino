@@ -248,8 +248,8 @@ void loop() {
           modePBDebounce = 0;                   // reset debounce timer count
           robotModeIndex++;                     // switch to next mode
           robotModeIndex = robotModeIndex % 3;  // keep mode index between 0 and 2
-          timerCount2sec = 0;                   // reset 3 second timer count
-          timeUp2sec = false;                   // reset 3 second timer
+          timerCount05sec = 0;                  // reset 3 second timer count
+          timeUp05sec = false;                  // reset 3 second timer
         }
       }
     }
@@ -415,7 +415,7 @@ void loop() {
     Indicator();                                                       // update LED
   }
 }
-}
+
 
 // send motor control signals, based on direction and pwm (speed)
 void setMotor(int dir, int pwm, int in1, int in2) {
@@ -439,10 +439,10 @@ void Indicator() {
 
 // map then set servo position, then print position
 void mapPosition(int potPos) {
-  long position = map(potPos, 0, 4096, cMinDutyCycle, cMaxDutyCycle); // map pos
-  ledcWrite(cServoChannel, position); // set servo pos 
+  long position = map(potPos, 0, 4096, cMinDutyCycle, cMaxDutyCycle);  // map pos
+  ledcWrite(cServoChannel, position);                                  // set servo pos
 
   // print pos data
-  Serial.println("PotPos: "); 
+  Serial.println("PotPos: ");
   Serial.println(position);
 }
