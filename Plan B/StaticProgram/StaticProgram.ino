@@ -95,9 +95,6 @@ int potPos = 0;                    // input value from the potentiometer
 // Variables
 uint16_t r, g, b, c;  // RGBC values from TCS34725
 
-// Variables
-uint16_t r, g, b, c;  // RGBC values from TCS34725
-
 // Declare SK6812 SMART LED object
 //   Argument 1 = Number of LEDs (pixels) in use
 //   Argument 2 = ESP32 pin number

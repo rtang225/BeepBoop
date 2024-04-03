@@ -57,16 +57,16 @@ const double cDistPerRev = 13.2;          // distance travelled by robot in 1 fu
 //            You will have to experiment to determine appropriate values.
 
 const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
-const int cRightAdjust = 9.9;            // Amount to slow down right motor relative to left
-const float turningDistance = 2.8;     // Turning distance counter
-const float turningMultiplier = 0.80;  // Multiplier for bot turning speed when searching for IR signal
+const int cRightAdjust = 9.35;            // Amount to slow down right motor relative to left
+const float turningDistance = 2.7;     // Turning distance counter
+const float turningMultiplier = 0.75;  // Multiplier for bot turning speed when searching for IR signal
 
 const int detectionDistance = 400;  // Ultrasonic range
 
 const int cGateServoOpen = 1700;    // Value for open position of claw
 const int cGateServoClosed = 1000;  // Value for closed position of claw
 
-const int cWindowSize = 7;  // Moving average filter window size
+const int cWindowSize = 4;  // Moving average filter window size
 //
 //=====================================================================================================================
 
@@ -292,12 +292,12 @@ void loop() {
                   if (RightEncoder.lRawEncoderCount <= target) {
                     driveCounter++;
                     if (driveCounter <= 7) {
-                      if (driveCounter <= 2) {
+                      if (driveCounter <= 2 || driveCounter == 7) {
                         driveDistance = 50;
-                      } else if (driveCounter <= 4 || driveCounter == 7) {
+                      } else if (driveCounter <= 4) {
                         driveDistance = 100;
                       } else if (driveCounter <= 6) {
-                        driveDistance = 150;
+                        driveDistance = 125;
                       }
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                       driveIndex--;                                                // next state: drive forward
@@ -311,7 +311,7 @@ void loop() {
                 case 3:                                                // Drive backwards
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    driveIndex++;
+                    driveIndex = 6;
                   }
                   break;
                 case 4:                                             // Checks if a character is received at all
@@ -370,10 +370,7 @@ void loop() {
                   // Checks for consistency of signal being received from sonar
                   if (filter.readAverage(cWindowSize) <= 2.50) {
                     sonarCounter++;
-                    if (sonarCounter == 3) {
-                      timeUp1sec = false;
-                    }
-                    if (sonarCounter > 3 && timeUp1sec) {  // Check for 6 consecutive readings <= 2.50cm
+                    if (sonarCounter >= 3) {  // Check for 6 consecutive readings <= 2.50cm
                       Bot.Stop("D1");
                       driveIndex++;  // Move to next case
                     }
