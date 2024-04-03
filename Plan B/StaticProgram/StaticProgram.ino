@@ -69,8 +69,7 @@ const int bHigh = 26;
 //
 //=====================================================================================================================
 // Variables
-bool motorsEnabled = true;  // motors enabled flag
-bool firstPass = true;
+bool timeUp120 = false;
 bool timeUp2sec = false;
 bool tc3Up = false;
 bool tc2Up = false;  // 2 second timer elapsed flag
@@ -78,9 +77,10 @@ bool tc1Up = false;
 unsigned char leftDriveSpeed;   // motor drive speed (0-255)
 unsigned char rightDriveSpeed;  // motor drive speed (0-255)
 unsigned int modePBDebounce;    // pushbutton debounce timer count
-unsigned long tc3 = 0;          // 500ms second timer count in milliseconds
-unsigned long tc2 = 0;          // 250ms second timer count in milliseconds
+unsigned long tc3 = 0;
+unsigned long tc2 = 0;
 unsigned long tc1 = 0;
+unsigned long tc120 = 0;
 unsigned long timerCount2sec = 0;  // 2 second timer count in milliseconds
 unsigned long displayTime;         // heartbeat LED update timer
 unsigned long previousMicros;      // last microsecond count
@@ -218,6 +218,13 @@ void loop() {
       tc1Up = true;  // indicate that 500ms seconds have elapsed
     }
 
+    // 120 second timer
+    tc120 = tc120 + 1;     // increment 500ms second timer count
+    if (tc120 > 120000) {  // if 500ms seconds have elapsed
+      tc120 = 0;           // reset 500ms second timer count
+      timeUp120 = true;    // indicate that 500ms seconds have elapsed
+    }
+
     // 2 second timer, counts 2000 milliseconds
     timerCount2sec = timerCount2sec + 1;  // increment 2 second timer count
     if (timerCount2sec > 500) {           // if 2 seconds have elapsed
@@ -250,6 +257,10 @@ void loop() {
           timeUp2sec = false;                   // reset 3 second timer
         }
       }
+    }
+
+    if (timeUp120) {
+      robotModeIndex = 0;
     }
 
     // modes
@@ -387,24 +398,25 @@ void loop() {
               tc3 = 0;
               tc3Up = false;
             }
-            break;
         }
         break;
     }
-
-
-    // Update brightness of heartbeat display on SmartLED
-    displayTime++;                                             // count milliseconds
-    if (displayTime > cDisplayUpdate) {                        // when display update period has passed
-      displayTime = 0;                                         // reset display counter
-      LEDBrightnessIndex++;                                    // shift to next brightness level
-      if (LEDBrightnessIndex > sizeof(LEDBrightnessLevels)) {  // if all defined levels have been used
-        LEDBrightnessIndex = 0;                                // reset to starting brightness
-      }
-      SmartLEDs.setBrightness(LEDBrightnessLevels[LEDBrightnessIndex]);  // set brightness of heartbeat LED
-      Indicator();                                                       // update LED
-    }
+    break;
   }
+
+
+  // Update brightness of heartbeat display on SmartLED
+  displayTime++;                                             // count milliseconds
+  if (displayTime > cDisplayUpdate) {                        // when display update period has passed
+    displayTime = 0;                                         // reset display counter
+    LEDBrightnessIndex++;                                    // shift to next brightness level
+    if (LEDBrightnessIndex > sizeof(LEDBrightnessLevels)) {  // if all defined levels have been used
+      LEDBrightnessIndex = 0;                                // reset to starting brightness
+    }
+    SmartLEDs.setBrightness(LEDBrightnessLevels[LEDBrightnessIndex]);  // set brightness of heartbeat LED
+    Indicator();                                                       // update LED
+  }
+}
 }
 
 // send motor control signals, based on direction and pwm (speed)
@@ -432,5 +444,4 @@ void mapPosition(int potPos) {
   ledcWrite(cServoChannel, position);
   Serial.println("PotPos: ");
   Serial.println(position);
-
 }
