@@ -166,6 +166,13 @@ void setup() {
 }
 
 void loop() {
+  // if 120 seconds have elapsed since the start of the program, set robot mode index to 0, stopping the wheel
+  if (timeUp120) {
+    robotModeIndex = 0;
+    timeUp120 = false;
+    Serial.println("timeup");
+  }
+
   // COLOUR CODE
   //=================================================================================================================================
   digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
@@ -192,11 +199,14 @@ void loop() {
   if ((currentMicros - previousMicros) >= 1000) {  // enter when 1 ms has elapsed
     previousMicros = currentMicros;                // record current time in microseconds
 
-    // 14ms second forward timer
-    tc3 = tc3 + 1;   // increment timer count
-    if (tc3 > 14) {  // if set time elapsed
-      tc3 = 0;       // reset timer count
-      tc3Up = true;  // indicate that set number of seconds have elapsed
+    Serial.println(tc120);
+
+
+      // 14ms second forward timer
+      tc3 = tc3 + 1;  // increment timer count
+    if (tc3 > 14) {   // if set time elapsed
+      tc3 = 0;        // reset timer count
+      tc3Up = true;   // indicate that set number of seconds have elapsed
     }
 
     // 70ms second stop timer
@@ -214,10 +224,11 @@ void loop() {
     }
 
     // 120 second timer
-    tc120 = tc120 + 1;     // increment timer count
-    if (tc120 > 120000) {  // if set time elapsed
-      tc120 = 0;           // reset timer count
-      timeUp120 = true;    // indicate that set number of seconds have elapsed
+    tc120 = tc120 + 1;   // increment timer count
+    if (tc120 > 24000) {  // if set time elapsed
+      Serial.print("time120");
+      tc120 = 0;
+      timeUp120 = true;  // indicate that set number of seconds have elapsed
     }
 
     // 0.5 second timer
@@ -252,11 +263,6 @@ void loop() {
           timeUp05sec = false;                  // reset 3 second timer
         }
       }
-    }
-
-    // if 120 seconds have elapsed since the start of the program, set robotmodeindex to 0, stopping the wheel
-    if (timeUp120) {
-      robotModeIndex = 0;
     }
 
     // modes
