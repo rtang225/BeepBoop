@@ -373,7 +373,7 @@ void loop() {
                   //Serial.println(filter.readAverage(cWindowSize));
                   // Checks for consistency of signal being received from sonar
                   //if (filter.readAverage(cWindowSize) <= 2.50) {
-                  if (sonar.ping_cm() <= 2.50) {
+                  if (sonar.ping_cm() <= 5) {
                     sonarCounter++;
                     if (sonarCounter >= 3) {  // Check for 6 consecutive readings <= 2.50cm
                       Bot.Stop("D1");
