@@ -21,27 +21,27 @@ void Indicator();                                  // for mode/heartbeat on Smar
 void setTarget(int dir, long pos, double dist);    // sets encoder position target for movement
 
 // Port pin constants
-#define LEFT_MOTOR_A 35        // GPIO35 pin 28 (J35) Motor 1 A
-#define LEFT_MOTOR_B 36        // GPIO36 pin 29 (J36) Motor 1 B
-#define RIGHT_MOTOR_A 37       // GPIO37 pin 30 (J37) Motor 2 A
-#define RIGHT_MOTOR_B 38       // GPIO38 pin 31 (J38) Motor 2 B
-#define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO15 (J15)
-#define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO16 (J16)
+#define LEFT_MOTOR_A 35        // GPIO35 pin 35 (J35) Motor 1 A
+#define LEFT_MOTOR_B 36        // GPIO36 pin 36 (J36) Motor 1 B
+#define RIGHT_MOTOR_A 37       // GPIO37 pin 37 (J37) Motor 2 A
+#define RIGHT_MOTOR_B 38       // GPIO38 pin 38 (J38) Motor 2 B
+#define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO09 (J9)
+#define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO010 (J10)
 #define ENCODER_RIGHT_A 11     // right encoder A signal is connected to pin 19 GPIO11 (J11)
 #define ENCODER_RIGHT_B 12     // right encoder B signal is connected to pin 20 GPIO12 (J12)
-#define MODE_BUTTON 0          // GPIO0  pin 27 for Push Button 1
+#define MODE_BUTTON 0          // GPIO0 pin 27 for Push Button 1
 #define MOTOR_ENABLE_SWITCH 3  // DIP Switch S1-1 pulls Digital pin D3 to ground when on, connected to pin 15 GPIO3 (J3)
 #define POT_R1 1               // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED 21           // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT 1      // number of SMART LEDs in use
-#define GATE_SERVO 41          // GPIO42 pin 35 (J42) Servo 2
+#define GATE_SERVO 41          // GPIO41 pin 41 (J41) Servo 2
 
 // IR DETECTOR
-#define IR_DETECTOR 15  // GPIO14 pin 17 (J14) IR detector input
+#define IR_DETECTOR 15         // GPIO14 pin 15 (J15) IR detector input
 
 // ULTRASONIC SENSOR
-#define TRIGGER_PIN 48
-#define ECHO_PIN 47
+#define TRIGGER_PIN 48         // GPIO48 pin 15 (J15) Trigger Pin
+#define ECHO_PIN 47            // GPIO47 pin 15 (J15) Echo Pin
 
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
@@ -56,10 +56,6 @@ const double cDistPerRev = 13.2;          // distance travelled by robot in 1 fu
 // IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
 //            You will have to experiment to determine appropriate values.
 
-// const int cClawServoOpen = 1000;    // Value for open position of claw
-// const int cClawServoClosed = 2150;  // Value for closed position of claw
-// const int cArmServoUp = 2200;       // Value for shoulder of arm fully up
-// const int cArmServoDown = 1000;     // Value for shoulder of arm fully down
 const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
 const int cRightAdjust = 9;            // Amount to slow down right motor relative to left
 const float turningDistance = 2.1;     // Turning distance counter
@@ -78,6 +74,7 @@ const int cWindowSize = 7;  // Moving average filter window size
 boolean motorsEnabled = true;         // motors enabled flag
 boolean timeUp3sec = false;           // 3 second timer elapsed flag
 boolean timeUp2sec = false;           // 2 second timer elapsed flag
+boolean timeUp1sec = false;           // 1 second timer elapsed flag
 boolean timeUp200msec = false;        // 200 millisecond timer elapsed flag
 unsigned char leftDriveSpeed;         // motor drive speed (0-255)
 unsigned char rightDriveSpeed;        // motor drive speed (0-255)
@@ -85,6 +82,7 @@ unsigned char driveIndex;             // state index for run mode
 unsigned int modePBDebounce;          // pushbutton debounce timer count
 unsigned long timerCount3sec = 0;     // 3 second timer count in milliseconds
 unsigned long timerCount2sec = 0;     // 2 second timer count in milliseconds
+unsigned long timerCount1sec = 0;     // 1 second timer count in milliseconds
 unsigned long timerCount200msec = 0;  // 200 millisecond timer count in milliseconds
 unsigned long displayTime;            // heartbeat LED update timer
 unsigned long previousMicros;         // last microsecond count
@@ -181,6 +179,13 @@ void loop() {
       timeUp2sec = true;                  // indicate that 2 seconds have elapsed
     }
 
+    // 1 second timer, counts 1000 milliseconds
+    timerCount1sec = timerCount1sec + 1;  // increment 1 second timer count
+    if (timerCount1sec > 1000) {          // if 1 seconds have elapsed
+      timerCount1sec = 0;                 // reset 1 second timer count
+      timeUp1sec = true;                  // indicate that 1 seconds have elapsed
+    }
+
     // 200 millisecond timer, counts 200 milliseconds
     timerCount200msec = timerCount200msec + 1;  // Increment 200 millisecond timer count
     if (timerCount200msec > 200)                // If 200 milliseconds have elapsed
@@ -268,7 +273,7 @@ void loop() {
                   Bot.Stop("D1");                          // drive ID
                   Bot.ToPosition("S1", cGateServoClosed);  // Closes gate
 
-                  setTarget(1, RightEncoder.lRawEncoderCount, 175);  // set target to drive forward
+                  setTarget(1, RightEncoder.lRawEncoderCount, 125);  // set target to drive forward
                   driveIndex++;                                      // next state: drive forward
                   break;
 
@@ -288,11 +293,11 @@ void loop() {
                     driveCounter++;
                     if (driveCounter <= 7) {
                       if (driveCounter <= 2) {
-                        driveDistance = 75;
+                        driveDistance = 50;
                       } else if (driveCounter <= 4 || driveCounter == 7) {
-                        driveDistance = 150;
+                        driveDistance = 100;
                       } else if (driveCounter <= 6) {
-                        driveDistance = 225;
+                        driveDistance = 150;
                       }
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                       driveIndex--;                                                // next state: drive forward
@@ -321,7 +326,7 @@ void loop() {
                       charCounter++;
                       if (charCounter > 5) {  // Checks for 5 consecutive characters
                         Bot.Stop("D1");
-                        setTarget(-1, RightEncoder.lRawEncoderCount, 40);
+                        setTarget(-1, RightEncoder.lRawEncoderCount, 20);
                         driveIndex++;
                       }
                     } else {
@@ -365,7 +370,10 @@ void loop() {
                   // Checks for consistency of signal being received from sonar
                   if (filter.readAverage(cWindowSize) <= 2.50) {
                     sonarCounter++;
-                    if (sonarCounter > 3) {  // Check for 6 consecutive readings <= 2.50cm
+                    if (sonarCounter == 3) {
+                      timeUp1sec = false;
+                    }
+                    if (sonarCounter > 3 && timeUp1sec) {  // Check for 6 consecutive readings <= 2.50cm
                       Bot.Stop("D1");
                       driveIndex++;  // Move to next case
                     }
@@ -375,7 +383,6 @@ void loop() {
                   break;
                 case 8:                                  // Deposits gems into collection container
                   Bot.ToPosition("S1", cGateServoOpen);  // Opens gate
-                  Serial.println("Done");
                   robotModeIndex = 0;
                   break;
               }
