@@ -1,4 +1,4 @@
-#define PRINT_COLOUR  // uncomment to turn on output of colour sensor data
+//#define PRINT_COLOUR  // uncomment to turn on output of colour sensor data
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
@@ -8,9 +8,9 @@
 
 // Function delcaration
 
-void Indicator();  // for mode/heartbeat on Smart LED
-void setMotor(int dir, int pwm, int in1, int in2);
-long degreesToDutyCycle(int deg);
+void Indicator();                                   // for mode/heartbeat on Smart LED
+void setMotor(int dir, int pwm, int in1, int in2);  // for setting motor speed and direction
+void mapPosition(int potPos);                       // for setting servo position
 
 // Port pin constants
 #define SORTER_SERVO 41   // GPIO41 pin 34 (J41) Servo 1
@@ -46,51 +46,46 @@ const int cTCSLED = 14;        // GPIO pin for LED on TCS34725
 const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 
 //=====================================================================================================================
-//
-// IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
-//            You will have to experiment to determine appropriate values.
-
-const int cSorterServoRight = 960;  // Value for shoulder of arm fully up
-const int cSorterServoLeft = 560;   // Value for shoulder of arm fully down
+const int cSorterServoRight = 960;  // Value for servo in right pos
+const int cSorterServoLeft = 560;   // Value for servo in left pos
 
 unsigned long pastTime = 0;  // var to store time
-int count = 0;
 
 // VARIABLES FOR GREEN
-const int rLow = 26;
-const int rHigh = 30;
+const int rLow = 26;   // value for min r reading
+const int rHigh = 30;  // value for max r reading
 
-const int gLow = 30;
-const int gHigh = 34;
+const int gLow = 30;   // value for min g reading
+const int gHigh = 34;  // value for max g reading
 
-const int bLow = 20;
-const int bHigh = 26;
+const int bLow = 20;   // value for min b reading
+const int bHigh = 26;  // value for max b reading
 
 //
 //=====================================================================================================================
 // Variables
-bool timeUp120 = false;
-bool timeUp2sec = false;
-bool tc3Up = false;
-bool tc2Up = false;  // 2 second timer elapsed flag
-bool tc1Up = false;
-unsigned char leftDriveSpeed;   // motor drive speed (0-255)
-unsigned char rightDriveSpeed;  // motor drive speed (0-255)
-unsigned int modePBDebounce;    // pushbutton debounce timer count
-unsigned long tc3 = 0;
-unsigned long tc2 = 0;
-unsigned long tc1 = 0;
-unsigned long tc120 = 0;
-unsigned long timerCount2sec = 0;  // 2 second timer count in milliseconds
-unsigned long displayTime;         // heartbeat LED update timer
-unsigned long previousMicros;      // last microsecond count
-unsigned long currentMicros;       // current microsecond count
-double target;                     // target encoder count to keep track of distance travelled
-unsigned long prevTime;            // Get the current time in milliseconds
-float driveDistance = 80;          // Forward/backward drive distance
-float turningDistance = 4.4;       // Turning distance counter
-int driveCounter = 0;              // Counter for drive program
-int potPos = 0;                    // input value from the potentiometer
+bool timeUp120 = false;             // 120 sec timer flag
+bool timeUp05sec = false;           // 0.5 sec start delay flag
+bool tc3Up = false;                 // forward wheel increment flag
+bool tc2Up = false;                 // stop wheel increment flag
+bool tc1Up = false;                 // reverse wheel increment flag
+unsigned char leftDriveSpeed;       // motor drive speed (0-255)
+unsigned char rightDriveSpeed;      // motor drive speed (0-255)
+unsigned int modePBDebounce;        // pushbutton debounce timer count
+unsigned long tc3 = 0;              // forward wheel increment count
+unsigned long tc2 = 0;              // stop wheel increment count
+unsigned long tc1 = 0;              // reverse wheel increment count
+unsigned long tc120 = 0;            // 120 sec timer
+unsigned long timerCount05sec = 0;  // 0.5 second timer count in milliseconds
+unsigned long displayTime;          // heartbeat LED update timer
+unsigned long previousMicros;       // last microsecond count
+unsigned long currentMicros;        // current microsecond count
+double target;                      // target encoder count to keep track of distance travelled
+unsigned long prevTime;             // Get the current time in milliseconds
+float driveDistance = 80;           // Forward/backward drive distance
+float turningDistance = 4.4;        // Turning distance counter
+int driveCounter = 0;               // Counter for drive program
+int potPos = 0;                     // input value from the potentiometer
 
 // Variables
 uint16_t r, g, b, c;  // RGBC values from TCS34725
@@ -112,7 +107,7 @@ unsigned char LEDBrightnessLevels[] = { 5, 15, 30, 45, 60, 75, 90, 105, 120, 135
                                         240, 225, 210, 195, 180, 165, 150, 135, 120, 105, 90, 75, 60, 45, 30, 15 };
 
 int robotModeIndex = 0;  // robot operational state
-int driveModeIndex = 0;
+int driveModeIndex = 0;  // robot drive state
 unsigned int modeIndicator[3] = {
   // colours for different modes
   SmartLEDs.Color(255, 0, 0),    //   red - stop
@@ -169,20 +164,28 @@ void setup() {
 }
 
 void loop() {
+  // if 120 seconds have elapsed since the start of the program, set robot mode index to 0, stopping the wheel
+  if (timeUp120) {
+    robotModeIndex = 0;
+    timeUp120 = false;
+    Serial.println("timeup");
+  }
+
   // COLOUR CODE
   //=================================================================================================================================
   digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
   if (tcsFlag) {                                    // if colour sensor initialized
     tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
-    //Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);
+    //Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c); // uncomment to print rgbc values
 
-    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g - b > 3) && (g > b)) {  // Checks the green value reading /* REQUIRES TESTING AND ADJUSTMENTS */
+    // if the sense gem is green, move the servo to the left and reset the past time var
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g - b > 3) && (g > b)) {
       ledcWrite(cServoChannel, cSorterServoLeft);
-      Serial.println("Green");  // Moves servo so stone slides into collection
       pastTime = millis();
     } else {
+      //if its been more than 600ms since the servo was moved to the left and no green gem is sensed, move servoback to right pos
       if ((millis() - pastTime) > 600) {
-        ledcWrite(cServoChannel, cSorterServoRight);  // Moves servo so stone slides into disposal tube
+        ledcWrite(cServoChannel, cSorterServoRight);
       }
     }
   }
@@ -194,39 +197,43 @@ void loop() {
   if ((currentMicros - previousMicros) >= 1000) {  // enter when 1 ms has elapsed
     previousMicros = currentMicros;                // record current time in microseconds
 
-    // 500ms second timer
-    tc3 = tc3 + 1;   // increment 500ms second timer count
-    if (tc3 > 14) {  // if 500ms seconds have elapsed
-      tc3 = 0;       // reset 500ms second timer count
-      tc3Up = true;  // indicate that 500ms seconds have elapsed
+    Serial.println(tc120);
+
+
+      // 14ms second forward timer
+      tc3 = tc3 + 1;  // increment timer count
+    if (tc3 > 14) {   // if set time elapsed
+      tc3 = 0;        // reset timer count
+      tc3Up = true;   // indicate that set number of seconds have elapsed
     }
 
-    // 500ms second timer
-    tc2 = tc2 + 1;   // increment 500ms second timer count
-    if (tc2 > 70) {  // if 500ms seconds have elapsed
-      tc2 = 0;       // reset 500ms second timer count
-      tc2Up = true;  // indicate that 500ms seconds have elapsed
+    // 70ms second stop timer
+    tc2 = tc2 + 1;   // increment timer count
+    if (tc2 > 70) {  // if set time elapsed
+      tc2 = 0;       // reset timer count
+      tc2Up = true;  // indicate that set number of seconds have elapsed
     }
 
-    // 500ms second timer
-    tc1 = tc1 + 1;   // increment 500ms second timer count
-    if (tc1 > 10) {  // if 500ms seconds have elapsed
-      tc1 = 0;       // reset 500ms second timer count
-      tc1Up = true;  // indicate that 500ms seconds have elapsed
+    // 10ms second reverse timer
+    tc1 = tc1 + 1;   // increment timer count
+    if (tc1 > 10) {  // if set time elapsed
+      tc1 = 0;       // reset timer count
+      tc1Up = true;  // indicate that set number of seconds have elapsed
     }
 
     // 120 second timer
-    tc120 = tc120 + 1;     // increment 500ms second timer count
-    if (tc120 > 120000) {  // if 500ms seconds have elapsed
-      tc120 = 0;           // reset 500ms second timer count
-      timeUp120 = true;    // indicate that 500ms seconds have elapsed
+    tc120 = tc120 + 1;   // increment timer count
+    if (tc120 > 24000) {  // if set time elapsed
+      Serial.print("time120");
+      tc120 = 0;
+      timeUp120 = true;  // indicate that set number of seconds have elapsed
     }
 
-    // 2 second timer, counts 2000 milliseconds
-    timerCount2sec = timerCount2sec + 1;  // increment 2 second timer count
-    if (timerCount2sec > 500) {           // if 2 seconds have elapsed
-      timerCount2sec = 0;                 // reset 2 second timer count
-      timeUp2sec = true;                  // indicate that 2 seconds have elapsed
+    // 0.5 second timer
+    timerCount05sec = timerCount05sec + 1;  // increment timer count
+    if (timerCount05sec > 500) {            // if set time elapsed
+      timerCount05sec = 0;                  // reset timer count
+      timeUp05sec = true;                   // indicate that set number of seconds have elapsed
     }
 
     // Mode pushbutton debounce and toggle
@@ -250,41 +257,38 @@ void loop() {
           modePBDebounce = 0;                   // reset debounce timer count
           robotModeIndex++;                     // switch to next mode
           robotModeIndex = robotModeIndex % 3;  // keep mode index between 0 and 2
-          timerCount2sec = 0;                   // reset 3 second timer count
-          timeUp2sec = false;                   // reset 3 second timer
+          timerCount05sec = 0;                  // reset 3 second timer count
+          timeUp05sec = false;                  // reset 3 second timer
         }
       }
     }
 
-    if (timeUp120) {
-      robotModeIndex = 0;
-    }
-
     // modes
     // 0 = Default after power up/reset. Robot is stopped.
-    // 1 = Press mode button once to enter. Run robot
+    // 1 = Press mode button once to enter servo calibration mode.
+    // 2 = Press mode button once to enter. Run robot
 
     switch (robotModeIndex) {
       case 0:                                      // Robot stopped
         setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
         setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
-        timeUp2sec = false;                        // reset 2 second timer
+        timeUp05sec = false;                       // reset timer
         break;
 
       case 1:
-        mapPosition(analogRead(cPotPin));  // get desired servo postion from pot input
+        mapPosition(analogRead(cPotPin));  // get desired servo postion from pot input then call mapPosition method
         break;
 
       case 2:  // Run robot
         switch (driveModeIndex) {
           case 0:
-            if (timeUp2sec) {  // pause for 2 sec before running case 1 code
-              leftDriveSpeed = cMaxPWM - 20;
-              rightDriveSpeed = cMaxPWM - 20;
-              driveModeIndex++;
-              timeUp2sec = false;
-              tc3 = 0;
-              tc3Up = false;
+            if (timeUp05sec) {                 // pause for 2 sec before running case 1 code
+              leftDriveSpeed = cMaxPWM - 20;   // set left motor speed
+              rightDriveSpeed = cMaxPWM - 20;  // set right motor speed
+              driveModeIndex++;                // increment mode index
+              timeUp05sec = false;             // reset timer flag
+              tc3 = 0;                         // reset timer count
+              tc3Up = false;                   // reset timer flag
             }
             break;
 
@@ -293,9 +297,9 @@ void loop() {
             setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
-              driveModeIndex++;
-              tc2 = 0;
-              tc2Up = false;
+              driveModeIndex++;  // increment mode index
+              tc2 = 0;           // reset timer count
+              tc2Up = false;     // reset timer flag
             }
             break;
 
@@ -304,9 +308,9 @@ void loop() {
             setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
-              driveModeIndex++;
-              tc3 = 0;
-              tc3Up = false;
+              driveModeIndex++;  // increment mode index
+              tc3 = 0;           // reset timer count
+              tc3Up = false;     // reset timer flag
             }
             break;
 
@@ -315,9 +319,9 @@ void loop() {
             setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
-              driveModeIndex++;
-              tc2 = 0;
-              tc2Up = false;
+              driveModeIndex++;  // increment mode index
+              tc2 = 0;           // reset timer count
+              tc2Up = false;     // reset timer flag
             }
             break;
 
@@ -326,9 +330,9 @@ void loop() {
             setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
-              driveModeIndex++;
-              tc3 = 0;
-              tc3Up = false;
+              driveModeIndex++;  // increment mode index
+              tc3 = 0;           // reset timer count
+              tc3Up = false;     // reset timer flag
             }
             break;
 
@@ -337,9 +341,9 @@ void loop() {
             setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
-              driveModeIndex++;
-              tc2 = 0;
-              tc2Up = false;
+              driveModeIndex++;  // increment mode index
+              tc2 = 0;           // reset timer count
+              tc2Up = false;     // reset timer flag
             }
             break;
 
@@ -348,9 +352,9 @@ void loop() {
             setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
-              driveModeIndex++;
-              tc3 = 0;
-              tc3Up = false;
+              driveModeIndex++;  // increment mode index
+              tc3 = 0;           // reset timer count
+              tc3Up = false;     // reset timer flag
             }
             break;
 
@@ -359,9 +363,9 @@ void loop() {
             setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
 
             if (tc3Up) {
-              driveModeIndex++;
-              tc2 = 0;
-              tc2Up = false;
+              driveModeIndex++;  // increment mode index
+              tc2 = 0;           // reset timer count
+              tc2Up = false;     // reset timer flag
             }
             break;
 
@@ -370,9 +374,9 @@ void loop() {
             setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
-              driveModeIndex++;
-              tc1 = 0;
-              tc1Up = false;
+              driveModeIndex++;  // increment mode index
+              tc1 = 0;           // reset timer count
+              tc1Up = false;     // reset timer flag
             }
             break;
 
@@ -380,9 +384,9 @@ void loop() {
             setMotor(-1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);  // left motor reverse
             setMotor(1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor forward (opposite dir from right)
             if (tc1Up) {
-              driveModeIndex++;
-              tc2 = 0;
-              tc2Up = false;
+              driveModeIndex++;  // increment mode index
+              tc2 = 0;           // reset timer count
+              tc2Up = false;     // reset timer flag
             }
             break;
 
@@ -391,14 +395,15 @@ void loop() {
             setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
-              driveModeIndex = 1;
-              tc3 = 0;
-              tc3Up = false;
+              driveModeIndex = 1;  // increment mode index
+              tc3 = 0;             // reset timer count
+              tc3Up = false;       // reset timer flag
             }
+
+            break;
         }
         break;
     }
-    break;
   }
 
 
@@ -414,7 +419,7 @@ void loop() {
     Indicator();                                                       // update LED
   }
 }
-}
+
 
 // send motor control signals, based on direction and pwm (speed)
 void setMotor(int dir, int pwm, int in1, int in2) {
@@ -436,9 +441,12 @@ void Indicator() {
   SmartLEDs.show();                                           // send the updated pixel colors to the hardware
 }
 
+// map then set servo position, then print position
 void mapPosition(int potPos) {
-  long position = map(potPos, 0, 4096, cMinDutyCycle, cMaxDutyCycle);  // convert to duty cycle
-  ledcWrite(cServoChannel, position);
+  long position = map(potPos, 0, 4096, cMinDutyCycle, cMaxDutyCycle);  // map pos
+  ledcWrite(cServoChannel, position);                                  // set servo pos
+
+  // print pos data
   Serial.println("PotPos: ");
   Serial.println(position);
 }
