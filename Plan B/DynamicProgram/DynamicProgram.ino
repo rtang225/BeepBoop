@@ -57,7 +57,7 @@ const double cDistPerRev = 13.2;          // distance travelled by robot in 1 fu
 //            You will have to experiment to determine appropriate values.
 
 const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
-const int cRightAdjust = 9.35;            // Amount to slow down right motor relative to left
+const int cRightAdjust = 9.3;            // Amount to slow down right motor relative to left
 const float turningDistance = 2.7;     // Turning distance counter
 const float turningMultiplier = 0.75;  // Multiplier for bot turning speed when searching for IR signal
 
@@ -273,7 +273,7 @@ void loop() {
                   Bot.Stop("D1");                          // drive ID
                   Bot.ToPosition("S1", cGateServoClosed);  // Closes gate
 
-                  setTarget(1, RightEncoder.lRawEncoderCount, 175);  // set target to drive forward
+                  setTarget(1, RightEncoder.lRawEncoderCount, 150);  // set target to drive forward
                   driveIndex++;                                      // next state: drive forward
                   break;
 
@@ -300,7 +300,7 @@ void loop() {
                       } else if (driveCounter <= 6) {
                         driveDistance = 125;
                       } else if (driveCounter == 7) {
-                        driveDistance = 25;
+                        driveDistance = 50;
                       }
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                       driveIndex--;                                                // next state: drive forward
@@ -366,13 +366,14 @@ void loop() {
                   break;
                 case 7:                                                // Drive backwards
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-                  sonarReading = sonar.ping_cm();
-                  filter.add(sonarReading);  // Moving average filter
-                  Serial.print(sonarReading);
-                  Serial.print(", ");
-                  Serial.println(filter.readAverage(cWindowSize));
+                  //sonarReading = sonar.ping_cm();
+                  //filter.add(sonarReading);  // Moving average filter
+                  //Serial.print(sonarReading);
+                  //Serial.print(", ");
+                  //Serial.println(filter.readAverage(cWindowSize));
                   // Checks for consistency of signal being received from sonar
-                  if (filter.readAverage(cWindowSize) <= 2.50) {
+                  //if (filter.readAverage(cWindowSize) <= 2.50) {
+                  if (sonar.ping_cm() <= 2.50) {
                     sonarCounter++;
                     if (sonarCounter >= 3) {  // Check for 6 consecutive readings <= 2.50cm
                       Bot.Stop("D1");
