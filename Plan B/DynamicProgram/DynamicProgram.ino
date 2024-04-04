@@ -315,7 +315,7 @@ void loop() {
                 case 3:                                                // Drive backwards
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    driveIndex = 6;
+                    driveIndex++;
                   }
                   break;
                 case 4:                                             // Checks if a character is received at all
@@ -330,7 +330,7 @@ void loop() {
                       charCounter++;
                       if (charCounter > 5) {  // Checks for 5 consecutive characters
                         Bot.Stop("D1");
-                        setTarget(-1, RightEncoder.lRawEncoderCount, 20);
+                        setTarget(-1, RightEncoder.lRawEncoderCount, 15);
                         driveIndex++;
                       }
                     } else {
@@ -373,9 +373,10 @@ void loop() {
                   //Serial.println(filter.readAverage(cWindowSize));
                   // Checks for consistency of signal being received from sonar
                   //if (filter.readAverage(cWindowSize) <= 2.50) {
+                  Serial.println(sonar.ping_cm());
                   if (sonar.ping_cm() <= 5) {
                     sonarCounter++;
-                    if (sonarCounter >= 3) {  // Check for 6 consecutive readings <= 2.50cm
+                    if (sonarCounter >= 150) {  // Check for 6 consecutive readings <= 2.50cm
                       Bot.Stop("D1");
                       driveIndex++;  // Move to next case
                     }
