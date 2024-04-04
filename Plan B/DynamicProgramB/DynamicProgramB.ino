@@ -57,8 +57,8 @@ const double cDistPerRev = 13.2;         // distance travelled by robot in 1 ful
 //            You will have to experiment to determine appropriate values.
 
 const int cLeftAdjust = 0;            // Amount to slow down left motor relative to right
-const int cRightAdjust = 9.3;         // Amount to slow down right motor relative to left
-const float turningDistance = 2.7;    // Turning distance counter
+const int cRightAdjust = 9.2;         // Amount to slow down right motor relative to left
+const float turningDistance = 2.9;    // Turning distance counter
 const float turningMultiplier = 0.75; // Multiplier for bot turning speed when searching for IR signal
 
 const int detectionDistance = 400; // Ultrasonic range
@@ -295,7 +295,7 @@ void loop()
                             Bot.Stop("D1");                         // drive ID
                             Bot.ToPosition("S1", cGateServoClosed); // Closes gate
 
-                            setTarget(1, RightEncoder.lRawEncoderCount, 150); // set target to drive forward
+                            setTarget(1, RightEncoder.lRawEncoderCount, 125); // set target to drive forward
                             driveIndex++;                                     // next state: drive forward
                             break;
 
@@ -331,7 +331,7 @@ void loop()
                             Bot.Left("D1", leftDriveSpeed, rightDriveSpeed); // drive ID, left speed, right speed
                             if (RightEncoder.lRawEncoderCount <= target)
                             {
-                                setTarget(1, RightEncoder.lRawEncoderCount, 100); // set target to drive forward
+                                setTarget(1, RightEncoder.lRawEncoderCount, 120); // set target to drive forward
                                 driveIndex++;                                     // next state: drive forward
                             }
                             break;
