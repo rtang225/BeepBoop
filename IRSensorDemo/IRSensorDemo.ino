@@ -12,7 +12,7 @@ void Indicator();                                                              /
 #define LEFT_MOTOR_B        36                                                 // GPIO36 pin 29 (J36) Motor 1 B
 #define RIGHT_MOTOR_A       37                                                 // GPIO37 pin 30 (J37) Motor 2 A
 #define RIGHT_MOTOR_B       38                                                 // GPIO38 pin 31 (J38) Motor 2 B
-#define ENCODER_LEFT_A      15                                                 // left encoder A signal is connected to pin 8 GPIO15 (J15)
+#define ENCODER_LEFT_A      17                                                 // left encoder A signal is connected to pin 8 GPIO15 (J15)
 #define ENCODER_LEFT_B      16                                                 // left encoder B signal is connected to pin 8 GPIO16 (J16)
 #define ENCODER_RIGHT_A     11                                                 // right encoder A signal is connected to pin 19 GPIO11 (J11)
 #define ENCODER_RIGHT_B     12                                                 // right encoder B signal is connected to pin 20 GPIO12 (J12)
@@ -21,7 +21,7 @@ void Indicator();                                                              /
 #define POT_R1              1                                                  // when DIP Switch S1-3 is on, Analog AD0 (pin 39) GPIO1 is connected to Poteniometer R1
 #define SMART_LED           21                                                 // when DIP Switch S1-4 is on, Smart LED is connected to pin 23 GPIO21 (J21)
 #define SMART_LED_COUNT     1                                                  // number of SMART LEDs in use
-#define IR_DETECTOR         17                                                 // GPIO14 pin 17 (J14) IR detector input
+#define IR_DETECTOR         15                                                 // GPIO14 pin 17 (J14) IR detector input
 #define SHOULDER_SERVO      41                                                 // GPIO41 pin 34 (J41) Servo 1
 #define CLAW_SERVO          42                                                 // GPIO42 pin 35 (J42) Servo 2
 

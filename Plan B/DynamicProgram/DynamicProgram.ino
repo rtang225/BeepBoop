@@ -7,7 +7,7 @@ Controls:
 - Stone dispending
 */
 
-// #define DEBUG_ENCODER_COUNT 1
+#define DEBUG_ENCODER_COUNT 1
 // #define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
@@ -17,8 +17,8 @@ Controls:
 #include <MovingAverage.h>  // https://github.com/MaximilianKautzsch/MovingAverage
 
 // Function declarations
-void Indicator();                                  // for mode/heartbeat on Smart LED
-void setTarget(int dir, long pos, double dist);    // sets encoder position target for movement
+void Indicator();                                // for mode/heartbeat on Smart LED
+void setTarget(int dir, long pos, double dist);  // sets encoder position target for movement
 
 // Port pin constants
 #define LEFT_MOTOR_A 35        // GPIO35 pin 35 (J35) Motor 1 A
@@ -37,11 +37,11 @@ void setTarget(int dir, long pos, double dist);    // sets encoder position targ
 #define GATE_SERVO 41          // GPIO41 pin 41 (J41) Servo 2
 
 // IR DETECTOR
-#define IR_DETECTOR 15         // GPIO14 pin 15 (J15) IR detector input
+#define IR_DETECTOR 15  // GPIO14 pin 15 (J15) IR detector input
 
 // ULTRASONIC SENSOR
-#define TRIGGER_PIN 48         // GPIO48 pin 15 (J15) Trigger Pin
-#define ECHO_PIN 47            // GPIO47 pin 15 (J15) Echo Pin
+#define TRIGGER_PIN 48  // GPIO48 pin 15 (J15) Trigger Pin
+#define ECHO_PIN 47     // GPIO47 pin 15 (J15) Echo Pin
 
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
@@ -57,16 +57,16 @@ const double cDistPerRev = 13.2;          // distance travelled by robot in 1 fu
 //            You will have to experiment to determine appropriate values.
 
 const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
-const int cRightAdjust = 9.9;            // Amount to slow down right motor relative to left
-const float turningDistance = 2.8;     // Turning distance counter
-const float turningMultiplier = 0.80;  // Multiplier for bot turning speed when searching for IR signal
+const int cRightAdjust = 9.3;          // Amount to slow down right motor relative to left
+const float turningDistance = 2.7;     // Turning distance counter
+const float turningMultiplier = 0.75;  // Multiplier for bot turning speed when searching for IR signal
 
 const int detectionDistance = 400;  // Ultrasonic range
 
 const int cGateServoOpen = 1700;    // Value for open position of claw
 const int cGateServoClosed = 1000;  // Value for closed position of claw
 
-const int cWindowSize = 7;  // Moving average filter window size
+const int cWindowSize = 4;  // Moving average filter window size
 //
 //=====================================================================================================================
 
@@ -273,7 +273,7 @@ void loop() {
                   Bot.Stop("D1");                          // drive ID
                   Bot.ToPosition("S1", cGateServoClosed);  // Closes gate
 
-                  setTarget(1, RightEncoder.lRawEncoderCount, 125);  // set target to drive forward
+                  setTarget(1, RightEncoder.lRawEncoderCount, 150);  // set target to drive forward
                   driveIndex++;                                      // next state: drive forward
                   break;
 
@@ -291,18 +291,22 @@ void loop() {
 
                   if (RightEncoder.lRawEncoderCount <= target) {
                     driveCounter++;
+                    Serial.println(driveCounter);
                     if (driveCounter <= 7) {
                       if (driveCounter <= 2) {
                         driveDistance = 50;
-                      } else if (driveCounter <= 4 || driveCounter == 7) {
+                      } else if (driveCounter <= 4) {
                         driveDistance = 100;
                       } else if (driveCounter <= 6) {
-                        driveDistance = 150;
+                        driveDistance = 125;
+                      } else if (driveCounter == 7) {
+                        driveDistance = 50;
                       }
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                       driveIndex--;                                                // next state: drive forward
                     } else {
-                      setTarget(-1, RightEncoder.lRawEncoderCount, 5);
+                      setTarget(-1, RightEncoder.lRawEncoderCount, 25);
+                      Serial.println("BACKING UP, JUST BACKING UP, WE'RE JUST BACKING UP...");
                       driveIndex++;
                     }
                   }
@@ -314,6 +318,7 @@ void loop() {
                     driveIndex++;
                   }
                   break;
+
                 case 4:                                             // Checks if a character is received at all
                   leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
                   rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
@@ -326,7 +331,7 @@ void loop() {
                       charCounter++;
                       if (charCounter > 5) {  // Checks for 5 consecutive characters
                         Bot.Stop("D1");
-                        setTarget(-1, RightEncoder.lRawEncoderCount, 20);
+                        setTarget(-1, RightEncoder.lRawEncoderCount, 15);
                         driveIndex++;
                       }
                     } else {
@@ -334,6 +339,7 @@ void loop() {
                     }
                   }
                   break;
+
                 case 5:                                                // Reverses closer to signal
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   if (RightEncoder.lRawEncoderCount <= target) {
@@ -341,6 +347,7 @@ void loop() {
                     driveIndex++;
                   }
                   break;
+
                 case 6:                                             // Checks if the signal is a U
                   leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
                   rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
@@ -348,10 +355,10 @@ void loop() {
                   // Check for consistency of signal being received from the IR beacon
                   if (Scan.Available()) {  // Checks if a scan is available
                     receivedChar = Scan.Get_IR_Data();
-                    // Serial.println(receivedChar);
+                    Serial.println(receivedChar);
                     if (receivedChar == 'U') {  // Checks if the received character is a U
                       irUCounter++;
-                      if (irUCounter > 5) {  // Checks for 16 consecutive U's
+                      if (irUCounter > 5) {  // Checks for 5 consecutive U's
                         Bot.Stop("D1");
                         driveIndex++;
                       }
@@ -360,20 +367,20 @@ void loop() {
                     }
                   }
                   break;
+
                 case 7:                                                // Drive backwards
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-                  sonarReading = sonar.ping_cm();
-                  filter.add(sonarReading);  // Moving average filter
-                  // Serial.print(sonarReading);
-                  // Serial.print(", ");
-                  // Serial.println(filter.readAverage(cWindowSize));
+                  //sonarReading = sonar.ping_cm();
+                  //filter.add(sonarReading);  // Moving average filter
+                  //Serial.print(sonarReading);
+                  //Serial.print(", ");
+                  //Serial.println(filter.readAverage(cWindowSize));
                   // Checks for consistency of signal being received from sonar
-                  if (filter.readAverage(cWindowSize) <= 2.50) {
+                  //if (filter.readAverage(cWindowSize) <= 2.50) {
+                  Serial.println(sonar.ping_cm());
+                  if (sonar.ping_cm() <= 5) {
                     sonarCounter++;
-                    if (sonarCounter == 3) {
-                      timeUp1sec = false;
-                    }
-                    if (sonarCounter > 3 && timeUp1sec) {  // Check for 6 consecutive readings <= 2.50cm
+                    if (sonarCounter >= 150) {  // Check for 6 consecutive readings <= 2.50cm
                       Bot.Stop("D1");
                       driveIndex++;  // Move to next case
                     }
@@ -381,6 +388,7 @@ void loop() {
                     sonarCounter = 0;
                   }
                   break;
+
                 case 8:                                  // Deposits gems into collection container
                   Bot.ToPosition("S1", cGateServoOpen);  // Opens gate
                   robotModeIndex = 0;
