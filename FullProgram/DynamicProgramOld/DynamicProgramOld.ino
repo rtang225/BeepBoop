@@ -7,7 +7,7 @@ Controls:
 - Stone dispending
 */
 
-#define DEBUG_ENCODER_COUNT 1
+// #define DEBUG_ENCODER_COUNT 1
 // #define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
@@ -17,16 +17,16 @@ Controls:
 #include <MovingAverage.h>  // https://github.com/MaximilianKautzsch/MovingAverage
 
 // Function declarations
-void Indicator();                                  // for mode/heartbeat on Smart LED
-void setTarget(int dir, long pos, double dist);    // sets encoder position target for movement
+void Indicator();                                // for mode/heartbeat on Smart LED
+void setTarget(int dir, long pos, double dist);  // sets encoder position target for movement
 
 // Port pin constants
 #define LEFT_MOTOR_A 35        // GPIO35 pin 35 (J35) Motor 1 A
 #define LEFT_MOTOR_B 36        // GPIO36 pin 36 (J36) Motor 1 B
 #define RIGHT_MOTOR_A 37       // GPIO37 pin 37 (J37) Motor 2 A
 #define RIGHT_MOTOR_B 38       // GPIO38 pin 38 (J38) Motor 2 B
-#define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO09 (J9)
-#define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO010 (J10)
+#define ENCODER_LEFT_A 9       // left encoder A signal is connected to pin 8 GPIO9 (J9)
+#define ENCODER_LEFT_B 10      // left encoder B signal is connected to pin 8 GPIO10 (J10)
 #define ENCODER_RIGHT_A 11     // right encoder A signal is connected to pin 19 GPIO11 (J11)
 #define ENCODER_RIGHT_B 12     // right encoder B signal is connected to pin 20 GPIO12 (J12)
 #define MODE_BUTTON 0          // GPIO0 pin 27 for Push Button 1
@@ -37,11 +37,11 @@ void setTarget(int dir, long pos, double dist);    // sets encoder position targ
 #define GATE_SERVO 41          // GPIO41 pin 41 (J41) Servo 2
 
 // IR DETECTOR
-#define IR_DETECTOR 15         // GPIO14 pin 15 (J15) IR detector input
+#define IR_DETECTOR 15  // GPIO14 pin 15 (J15) IR detector input
 
 // ULTRASONIC SENSOR
-#define TRIGGER_PIN 48         // GPIO48 pin 15 (J15) Trigger Pin
-#define ECHO_PIN 47            // GPIO47 pin 15 (J15) Echo Pin
+#define TRIGGER_PIN 48  // GPIO48 pin 15 (J15) Trigger Pin
+#define ECHO_PIN 47     // GPIO47 pin 15 (J15) Echo Pin
 
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
@@ -50,25 +50,16 @@ const int cMinPWM = 150;                  // PWM value for minimum speed that tu
 const int cMaxPWM = pow(2, cPWMRes) - 1;  // PWM value for maximum speed
 const int cCountsRev = 1096;              // encoder pulses per motor revolution
 const double cDistPerRev = 13.2;          // distance travelled by robot in 1 full revolution of the motor (1096 counts = 13.2 cm)
-
-//=====================================================================================================================
-//
-// IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
-//            You will have to experiment to determine appropriate values.
-
-const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
-const int cRightAdjust = 9.3;            // Amount to slow down right motor relative to left
-const float turningDistance = 2.7;     // Turning distance counter
-const float turningMultiplier = 0.75;  // Multiplier for bot turning speed when searching for IR signal
-
 const int detectionDistance = 400;  // Ultrasonic range
-
 const int cGateServoOpen = 1700;    // Value for open position of claw
 const int cGateServoClosed = 1000;  // Value for closed position of claw
-
 const int cWindowSize = 4;  // Moving average filter window size
-//
-//=====================================================================================================================
+
+// Adjustment values for robot
+const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
+const int cRightAdjust = 9.3;          // Amount to slow down right motor relative to left
+const float turningDistance = 2.7;     // Turning distance counter
+const float turningMultiplier = 0.75;  // Multiplier for bot turning speed when searching for IR signal
 
 // Variables
 boolean motorsEnabled = true;         // motors enabled flag
@@ -291,22 +282,22 @@ void loop() {
 
                   if (RightEncoder.lRawEncoderCount <= target) {
                     driveCounter++;
-                    Serial.println(driveCounter);
+                    // Serial.println(driveCounter);
                     if (driveCounter <= 7) {
                       if (driveCounter <= 2) {
-                        driveDistance = 50;
+                        driveDistance = 50;           // Set distance to 50 cm
                       } else if (driveCounter <= 4) {
-                        driveDistance = 100;
+                        driveDistance = 100;          // Set distance to 100 cm
                       } else if (driveCounter <= 6) {
-                        driveDistance = 125;
+                        driveDistance = 125;          // Set distance to 125 cm
                       } else if (driveCounter == 7) {
-                        driveDistance = 50;
+                        driveDistance = 50;           // Set distance to 50 cm
                       }
                       setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
                       driveIndex--;                                                // next state: drive forward
                     } else {
                       setTarget(-1, RightEncoder.lRawEncoderCount, 25);
-                      Serial.println("BACKING UP, JUST BACKING UP, WE'RE JUST BACKING UP...");
+                      // Serial.println("BACKING UP, JUST BACKING UP, WE'RE JUST BACKING UP...");
                       driveIndex++;
                     }
                   }
@@ -318,6 +309,7 @@ void loop() {
                     driveIndex++;
                   }
                   break;
+                
                 case 4:                                             // Checks if a character is received at all
                   leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
                   rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
@@ -338,6 +330,7 @@ void loop() {
                     }
                   }
                   break;
+
                 case 5:                                                // Reverses closer to signal
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   if (RightEncoder.lRawEncoderCount <= target) {
@@ -345,6 +338,7 @@ void loop() {
                     driveIndex++;
                   }
                   break;
+
                 case 6:                                             // Checks if the signal is a U
                   leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
                   rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
@@ -364,15 +358,16 @@ void loop() {
                     }
                   }
                   break;
+
                 case 7:                                                // Drive backwards
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-                  //sonarReading = sonar.ping_cm();
-                  //filter.add(sonarReading);  // Moving average filter
-                  //Serial.print(sonarReading);
-                  //Serial.print(", ");
-                  //Serial.println(filter.readAverage(cWindowSize));
+                  // sonarReading = sonar.ping_cm();
+                  // filter.add(sonarReading);  // Moving average filter
+                  // Serial.print(sonarReading);
+                  // Serial.print(", ");
+                  // Serial.println(filter.readAverage(cWindowSize));
                   // Checks for consistency of signal being received from sonar
-                  //if (filter.readAverage(cWindowSize) <= 2.50) {
+                  // if (filter.readAverage(cWindowSize) <= 2.50) {
                   Serial.println(sonar.ping_cm());
                   if (sonar.ping_cm() <= 5) {
                     sonarCounter++;
@@ -384,6 +379,7 @@ void loop() {
                     sonarCounter = 0;
                   }
                   break;
+
                 case 8:                                  // Deposits gems into collection container
                   Bot.ToPosition("S1", cGateServoOpen);  // Opens gate
                   robotModeIndex = 0;

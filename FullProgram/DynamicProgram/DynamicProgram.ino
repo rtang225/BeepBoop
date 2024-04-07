@@ -53,7 +53,7 @@ const int detectionDistance = 400;        // Ultrasonic range
 const int cGateServoOpen = 1700;          // Value for open position of claw
 const int cGateServoClosed = 1000;        // Value for closed position of claw
 
-// Adjustment values for robot.
+// Adjustment values for robot
 const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
 const int cRightAdjust = 8.9;          // Amount to slow down right motor relative to left
 const float turningDistance = 3;       // Turning distance counter
