@@ -4,10 +4,10 @@ This is the dynamic program of the project
 Controls:
 - Drivetrain
 - Return path
-- Stone drop off
+- Stone dispending
 */
 
-// #define DEBUG_ENCODER_COUNT 1
+#define DEBUG_ENCODER_COUNT 1
 // #define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
@@ -17,8 +17,8 @@ Controls:
 #include <MovingAverage.h>  // https://github.com/MaximilianKautzsch/MovingAverage
 
 // Function declarations
-void Indicator();                                // for mode/heartbeat on Smart LED
-void setTarget(int dir, long pos, double dist);  // sets encoder position target for movement
+void Indicator();                                  // for mode/heartbeat on Smart LED
+void setTarget(int dir, long pos, double dist);    // sets encoder position target for movement
 
 // Port pin constants
 #define LEFT_MOTOR_A 35        // GPIO35 pin 35 (J35) Motor 1 A
@@ -37,11 +37,11 @@ void setTarget(int dir, long pos, double dist);  // sets encoder position target
 #define GATE_SERVO 41          // GPIO41 pin 41 (J41) Servo 2
 
 // IR DETECTOR
-#define IR_DETECTOR 15  // GPIO15 pin 15 (J15) IR detector input
+#define IR_DETECTOR 15         // GPIO14 pin 15 (J15) IR detector input
 
 // ULTRASONIC SENSOR
-#define TRIGGER_PIN 48  // GPIO48 pin 48 (J48) Trigger Pin
-#define ECHO_PIN 47     // GPIO47 pin 47 (J47) Echo Pin
+#define TRIGGER_PIN 48         // GPIO48 pin 15 (J15) Trigger Pin
+#define ECHO_PIN 47            // GPIO47 pin 15 (J15) Echo Pin
 
 // Constants
 const int cDisplayUpdate = 100;           // update interval for Smart LED in milliseconds
@@ -50,15 +50,25 @@ const int cMinPWM = 150;                  // PWM value for minimum speed that tu
 const int cMaxPWM = pow(2, cPWMRes) - 1;  // PWM value for maximum speed
 const int cCountsRev = 1096;              // encoder pulses per motor revolution
 const double cDistPerRev = 13.2;          // distance travelled by robot in 1 full revolution of the motor (1096 counts = 13.2 cm)
-const int detectionDistance = 400;        // Ultrasonic range
-const int cGateServoOpen = 1700;          // Value for open position of claw
-const int cGateServoClosed = 1000;        // Value for closed position of claw
 
-// Adjustment values for robot.
+//=====================================================================================================================
+//
+// IMPORTANT: The constants in this section need to be set to appropriate values for your robot.
+//            You will have to experiment to determine appropriate values.
+
 const int cLeftAdjust = 0;             // Amount to slow down left motor relative to right
-const int cRightAdjust = 8.9;          // Amount to slow down right motor relative to left
-const float turningDistance = 3;       // Turning distance counter
-const float turningMultiplier = 0.70;  // Multiplier for bot turning speed when searching for IR signal
+const int cRightAdjust = 9.3;            // Amount to slow down right motor relative to left
+const float turningDistance = 2.7;     // Turning distance counter
+const float turningMultiplier = 0.75;  // Multiplier for bot turning speed when searching for IR signal
+
+const int detectionDistance = 400;  // Ultrasonic range
+
+const int cGateServoOpen = 1700;    // Value for open position of claw
+const int cGateServoClosed = 1000;  // Value for closed position of claw
+
+const int cWindowSize = 4;  // Moving average filter window size
+//
+//=====================================================================================================================
 
 // Variables
 boolean motorsEnabled = true;         // motors enabled flag
@@ -118,7 +128,7 @@ Motion Bot = Motion();               // Instance of Motion for motor control
 Encoders LeftEncoder = Encoders();   // Instance of Encoders for left encoder data
 Encoders RightEncoder = Encoders();  // Instance of Encoders for right encoder data
 
-IR Scan = IR();                                           // Instance of IR for detecting IR signals
+IR Scan = IR();                                           // instance of IR for detecting IR signals
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, detectionDistance);  // Ultrasonic
 
 void setup() {
@@ -263,7 +273,7 @@ void loop() {
                   Bot.Stop("D1");                          // drive ID
                   Bot.ToPosition("S1", cGateServoClosed);  // Closes gate
 
-                  setTarget(1, RightEncoder.lRawEncoderCount, 125);  // set target to drive forward
+                  setTarget(1, RightEncoder.lRawEncoderCount, 150);  // set target to drive forward
                   driveIndex++;                                      // next state: drive forward
                   break;
 
@@ -278,36 +288,37 @@ void loop() {
 
                 case 2:                                             // Turn left
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
+
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    setTarget(1, RightEncoder.lRawEncoderCount, 50);  // set target to drive forward
-                    driveIndex++;                                     // next state: drive forward
+                    driveCounter++;
+                    Serial.println(driveCounter);
+                    if (driveCounter <= 7) {
+                      if (driveCounter <= 2) {
+                        driveDistance = 50;
+                      } else if (driveCounter <= 4) {
+                        driveDistance = 100;
+                      } else if (driveCounter <= 6) {
+                        driveDistance = 125;
+                      } else if (driveCounter == 7) {
+                        driveDistance = 50;
+                      }
+                      setTarget(1, RightEncoder.lRawEncoderCount, driveDistance);  // set target to drive forward
+                      driveIndex--;                                                // next state: drive forward
+                    } else {
+                      setTarget(-1, RightEncoder.lRawEncoderCount, 25);
+                      Serial.println("BACKING UP, JUST BACKING UP, WE'RE JUST BACKING UP...");
+                      driveIndex++;
+                    }
                   }
                   break;
 
-                case 3:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    setTarget(-1, RightEncoder.lRawEncoderCount, turningDistance);  // set next target to turn 90 degrees CCW
-                    driveIndex++;                                                   // next state: turn left
-                  }
-                  break;
-
-                case 4:                                             // Turn left
-                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
+                case 3:                                                // Drive backwards
+                  Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
                   if (RightEncoder.lRawEncoderCount <= target) {
-                    setTarget(1, RightEncoder.lRawEncoderCount, 100);  // set target to drive forward
-                    driveIndex++;                                      // next state: drive forward
+                    driveIndex++;
                   }
                   break;
-
-                case 5:                                                // Drive forward
-                  Bot.Forward("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-                  if (RightEncoder.lRawEncoderCount >= target) {
-                    driveIndex++;  // next state: turn left
-                  }
-                  break;
-
-                case 6:                                             // Checks if a character is received at all
+                case 4:                                             // Checks if a character is received at all
                   leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
                   rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
                   Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // Turn left
@@ -319,6 +330,7 @@ void loop() {
                       charCounter++;
                       if (charCounter > 5) {  // Checks for 5 consecutive characters
                         Bot.Stop("D1");
+                        setTarget(-1, RightEncoder.lRawEncoderCount, 15);
                         driveIndex++;
                       }
                     } else {
@@ -326,19 +338,49 @@ void loop() {
                     }
                   }
                   break;
-
+                case 5:                                                // Reverses closer to signal
+                  Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
+                  if (RightEncoder.lRawEncoderCount <= target) {
+                    Bot.Stop("D1");
+                    driveIndex++;
+                  }
+                  break;
+                case 6:                                             // Checks if the signal is a U
+                  leftDriveSpeed = cMaxPWM * turningMultiplier;     // Slow down left wheel drive speed
+                  rightDriveSpeed = cMaxPWM * turningMultiplier;    // Slow down right wheel drive speed
+                  Bot.Left("D1", leftDriveSpeed, rightDriveSpeed);  // Turn left
+                  // Check for consistency of signal being received from the IR beacon
+                  if (Scan.Available()) {  // Checks if a scan is available
+                    receivedChar = Scan.Get_IR_Data();
+                    Serial.println(receivedChar);
+                    if (receivedChar == 'U') {  // Checks if the received character is a U
+                      irUCounter++;
+                      if (irUCounter > 5) {  // Checks for 5 consecutive U's
+                        Bot.Stop("D1");
+                        driveIndex++;
+                      }
+                    } else {
+                      irUCounter = 0;
+                    }
+                  }
+                  break;
                 case 7:                                                // Drive backwards
                   Bot.Reverse("D1", leftDriveSpeed, rightDriveSpeed);  // drive ID, left speed, right speed
-                  // Serial.println(sonar.ping_cm());
-                  // Determines if the sonar reading is consistently under 5 cm
+                  //sonarReading = sonar.ping_cm();
+                  //filter.add(sonarReading);  // Moving average filter
+                  //Serial.print(sonarReading);
+                  //Serial.print(", ");
+                  //Serial.println(filter.readAverage(cWindowSize));
+                  // Checks for consistency of signal being received from sonar
+                  //if (filter.readAverage(cWindowSize) <= 2.50) {
+                  Serial.println(sonar.ping_cm());
                   if (sonar.ping_cm() <= 5) {
                     sonarCounter++;
-                    if (sonarCounter >= 150) {  // Check for 150 consecutive readings <= 5 cm
-                      Bot.Stop("D1");           // Stops the bot when threshold is reached
-                      driveIndex++;             // Move to next case
+                    if (sonarCounter >= 150) {  // Check for 6 consecutive readings <= 2.50cm
+                      Bot.Stop("D1");
+                      driveIndex++;  // Move to next case
                     }
-                  } else  // Resets sonarCounter if the reading is not below 5 cm
-                  {
+                  } else {
                     sonarCounter = 0;
                   }
                   break;
@@ -353,6 +395,7 @@ void loop() {
           }
           break;
         }
+
         // Update brightness of heartbeat display on SmartLED
         displayTime++;                                             // count milliseconds
         if (displayTime > cDisplayUpdate) {                        // when display update period has passed
