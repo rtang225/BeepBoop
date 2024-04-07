@@ -52,14 +52,17 @@ const int cSorterServoLeft = 560;   // Value for servo in left pos
 unsigned long pastTime = 0;  // var to store time
 
 // VARIABLES FOR GREEN
-const int rLow = 26;   // value for min r reading
-const int rHigh = 30;  // value for max r reading
+const int rLow = 28;   // value for min r reading 
+const int rHigh = 35;  // value for max r reading
 
-const int gLow = 30;   // value for min g reading
-const int gHigh = 34;  // value for max g reading
+const int gLow = 32;   // value for min g reading 
+const int gHigh = 37;  // value for max g reading
 
-const int bLow = 20;   // value for min b reading
-const int bHigh = 26;  // value for max b reading
+const int bLow = 27;   // value for min b reading 
+const int bHigh = 35;  // value for max b reading
+
+const int cLow = 90;   // value for min c reading
+const int cHigh = 110;  // value for max c reading
 
 //
 //=====================================================================================================================
@@ -168,18 +171,18 @@ void loop() {
   if (timeUp120) {
     robotModeIndex = 0;
     timeUp120 = false;
-    Serial.println("timeup");
   }
 
   // COLOUR CODE
   //=================================================================================================================================
-  digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));  // turn on onboard LED if switch state is low (on position)
-  if (tcsFlag) {                                    // if colour sensor initialized
-    tcs.getRawData(&r, &g, &b, &c);                 // get raw RGBC values
-    //Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c); // uncomment to print rgbc values
+  digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));             // turn on onboard LED if switch state is low (on position)
+  if (tcsFlag) {                                               // if colour sensor initialized
+    tcs.getRawData(&r, &g, &b, &c);                            // get raw RGBC values
+    Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);  // uncomment to print rgbc values
 
     // if the sense gem is green, move the servo to the left and reset the past time var
-    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (g - b > 3) && (g > b)) {
+    if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh) && (g - b > 4) && (g > r) && (g > b)) {
+      Serial.println("GREEN===============================================");
       ledcWrite(cServoChannel, cSorterServoLeft);
       pastTime = millis();
     } else {
@@ -197,24 +200,21 @@ void loop() {
   if ((currentMicros - previousMicros) >= 1000) {  // enter when 1 ms has elapsed
     previousMicros = currentMicros;                // record current time in microseconds
 
-    Serial.println(tc120);
-
-
-      // 14ms second forward timer
-      tc3 = tc3 + 1;  // increment timer count
-    if (tc3 > 14) {   // if set time elapsed
-      tc3 = 0;        // reset timer count
-      tc3Up = true;   // indicate that set number of seconds have elapsed
+    // forward timer
+    tc3 = tc3 + 1;   // increment timer count
+    if (tc3 > 12) {  // if set time elapsed
+      tc3 = 0;       // reset timer count
+      tc3Up = true;  // indicate that set number of seconds have elapsed
     }
 
-    // 70ms second stop timer
+    // stop timer
     tc2 = tc2 + 1;   // increment timer count
     if (tc2 > 70) {  // if set time elapsed
       tc2 = 0;       // reset timer count
       tc2Up = true;  // indicate that set number of seconds have elapsed
     }
 
-    // 10ms second reverse timer
+    // reverse timer
     tc1 = tc1 + 1;   // increment timer count
     if (tc1 > 10) {  // if set time elapsed
       tc1 = 0;       // reset timer count
@@ -222,8 +222,8 @@ void loop() {
     }
 
     // 120 second timer
-    tc120 = tc120 + 1;   // increment timer count
-    if (tc120 > 24000) {  // if set time elapsed
+    tc120 = tc120 + 1;    // increment timer count
+    if (tc120 > 18000) {  // if set time elapsed
       Serial.print("time120");
       tc120 = 0;
       timeUp120 = true;  // indicate that set number of seconds have elapsed
@@ -283,8 +283,8 @@ void loop() {
         switch (driveModeIndex) {
           case 0:
             if (timeUp05sec) {                 // pause for 2 sec before running case 1 code
-              leftDriveSpeed = cMaxPWM - 20;   // set left motor speed
-              rightDriveSpeed = cMaxPWM - 20;  // set right motor speed
+              leftDriveSpeed = cMaxPWM - 30;   // set left motor speed
+              rightDriveSpeed = cMaxPWM - 30;  // set right motor speed
               driveModeIndex++;                // increment mode index
               timeUp05sec = false;             // reset timer flag
               tc3 = 0;                         // reset timer count
