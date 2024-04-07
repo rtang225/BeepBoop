@@ -86,6 +86,7 @@ float driveDistance = 80;           // Forward/backward drive distance
 float turningDistance = 4.4;        // Turning distance counter
 int driveCounter = 0;               // Counter for drive program
 int potPos = 0;                     // input value from the potentiometer
+int forwards = 0;                   // Number of times forward
 
 // Variables
 uint16_t r, g, b, c;  // RGBC values from TCS34725
@@ -303,17 +304,22 @@ void loop() {
             setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
-              driveModeIndex++;  // increment mode index
-              tc3 = 0;           // reset timer count
-              tc3Up = false;     // reset timer flag
+              forwards++;         // increments number of times forward
+              if (forwards <= 4) {
+                driveModeIndex--; // return to previous mode index
+              }
+              else {
+                driveModeIndex++; // increment to next mode index
+              }
+              tc3 = 0;            // reset timer count
+              tc3Up = false;      // reset timer flag
             }
             break;
 
           case 3:
-            setMotor(1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);    // left motor forward
-            setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
-
-            if (tc3Up) {
+            setMotor(-1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);  // left motor reverse
+            setMotor(1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor forward (opposite dir from right)
+            if (tc1Up) {
               driveModeIndex++;  // increment mode index
               tc2 = 0;           // reset timer count
               tc2Up = false;     // reset timer flag
@@ -325,72 +331,8 @@ void loop() {
             setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
 
             if (tc2Up) {
-              driveModeIndex++;  // increment mode index
-              tc3 = 0;           // reset timer count
-              tc3Up = false;     // reset timer flag
-            }
-            break;
-
-          case 5:
-            setMotor(1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);    // left motor forward
-            setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
-
-            if (tc3Up) {
-              driveModeIndex++;  // increment mode index
-              tc2 = 0;           // reset timer count
-              tc2Up = false;     // reset timer flag
-            }
-            break;
-
-          case 6:
-            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
-            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
-
-            if (tc2Up) {
-              driveModeIndex++;  // increment mode index
-              tc3 = 0;           // reset timer count
-              tc3Up = false;     // reset timer flag
-            }
-            break;
-
-          case 7:
-            setMotor(1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);    // left motor forward
-            setMotor(-1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor reverse (opposite dir from left)
-
-            if (tc3Up) {
-              driveModeIndex++;  // increment mode index
-              tc2 = 0;           // reset timer count
-              tc2Up = false;     // reset timer flag
-            }
-            break;
-
-          case 8:
-            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
-            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
-
-            if (tc2Up) {
-              driveModeIndex++;  // increment mode index
-              tc1 = 0;           // reset timer count
-              tc1Up = false;     // reset timer flag
-            }
-            break;
-
-          case 9:
-            setMotor(-1, leftDriveSpeed, cIN1Chan[0], cIN2Chan[0]);  // left motor reverse
-            setMotor(1, rightDriveSpeed, cIN1Chan[1], cIN2Chan[1]);  // right motor forward (opposite dir from right)
-            if (tc1Up) {
-              driveModeIndex++;  // increment mode index
-              tc2 = 0;           // reset timer count
-              tc2Up = false;     // reset timer flag
-            }
-            break;
-
-          case 10:
-            setMotor(0, 0, cIN1Chan[0], cIN2Chan[0]);  // stop left motor
-            setMotor(0, 0, cIN1Chan[1], cIN2Chan[1]);  // stop right motor
-
-            if (tc2Up) {
-              driveModeIndex = 1;  // increment mode index
+              forwards = 0;        // reset number of times forward
+              driveModeIndex = 1;  // reset mode index
               tc3 = 0;             // reset timer count
               tc3Up = false;       // reset timer flag
             }
