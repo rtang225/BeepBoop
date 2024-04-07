@@ -14,7 +14,6 @@ Controls:
 #include <Adafruit_NeoPixel.h>
 #include <MSE2202_Lib.h>
 #include <NewPing.h>        // https://bitbucket.org/teckel12/arduino-new-ping/wiki/Home
-#include <MovingAverage.h>  // https://github.com/MaximilianKautzsch/MovingAverage
 
 // Function declarations
 void Indicator();                                // for mode/heartbeat on Smart LED
@@ -99,7 +98,6 @@ int sonarCounter = 0;                 // Counter for consistency of sonar measur
 //     NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //     NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 Adafruit_NeoPixel SmartLEDs(SMART_LED_COUNT, SMART_LED, NEO_RGB + NEO_KHZ800);
-MovingAverage<int, int> filter;
 
 // smart LED brightness for heartbeat
 unsigned char LEDBrightnessIndex = 0;
@@ -143,8 +141,6 @@ void setup() {
   pinMode(MOTOR_ENABLE_SWITCH, INPUT_PULLUP);  // set up motor enable switch with internal pullup
   pinMode(MODE_BUTTON, INPUT_PULLUP);          // Set up mode pushbutton
   modePBDebounce = 0;                          // reset debounce timer count
-
-  filter.begin();
 }
 
 void loop() {
