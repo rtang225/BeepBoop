@@ -1,5 +1,5 @@
 /*
-This is the dynamic program of the project
+This is the OLD dynamic program of the project. It was replaced with the current one after it was deemed too long and too high of a margin of error
 
 Controls:
 - Drivetrain

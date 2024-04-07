@@ -1,3 +1,5 @@
+// Yeah I just grabbed the Lab 3 code, it works so....
+
 #define DEBUG_ENCODER_COUNT  1
 
 #include <Arduino.h>

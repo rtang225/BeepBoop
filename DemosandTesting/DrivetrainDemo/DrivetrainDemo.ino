@@ -1,5 +1,7 @@
+// Drivetrain Demo from Milestone 2
+
 // #define DEBUG_ENCODER_COUNT 1
-#define DEBUG_DRIVE_SPEED 1
+// #define DEBUG_DRIVE_SPEED 1
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>

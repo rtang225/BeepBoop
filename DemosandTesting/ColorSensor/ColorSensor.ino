@@ -1,3 +1,5 @@
+// Demo code for testing what colors the sensor detects
+
 #define PRINT_COLOUR  // uncomment to turn on output of colour sensor data
 
 #include <Arduino.h>

@@ -1,3 +1,5 @@
+// Ultrasonic demo code. It works.
+
 // Include NewPing Library
 #include "NewPing.h"
 
