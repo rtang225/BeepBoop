@@ -4,7 +4,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <SPI.h>
-#include "Adafruit_TCS34725.h"
+#include <Adafruit_TCS34725.h>
 
 // Function delcaration
 
@@ -45,27 +45,24 @@ const int cSCL = 48;           // GPIO pin for I2C clock
 const int cTCSLED = 14;        // GPIO pin for LED on TCS34725
 const int cLEDSwitch = 46;     // DIP switch S1-2 controls LED on TCS32725
 
-//=====================================================================================================================
 const int cSorterServoRight = 960;  // Value for servo in right pos
 const int cSorterServoLeft = 560;   // Value for servo in left pos
 
 unsigned long pastTime = 0;  // var to store time
 
-// VARIABLES FOR GREEN
-const int rLow = 28;   // value for min r reading 
+// VARIABLES FOR GREEN DETECTION
+const int rLow = 28;   // value for min r reading
 const int rHigh = 35;  // value for max r reading
 
-const int gLow = 32;   // value for min g reading 
+const int gLow = 32;   // value for min g reading
 const int gHigh = 37;  // value for max g reading
 
-const int bLow = 27;   // value for min b reading 
+const int bLow = 27;   // value for min b reading
 const int bHigh = 35;  // value for max b reading
 
-const int cLow = 90;   // value for min c reading
+const int cLow = 90;    // value for min c reading
 const int cHigh = 110;  // value for max c reading
 
-//
-//=====================================================================================================================
 // Variables
 bool timeUp120 = false;             // 120 sec timer flag
 bool timeUp05sec = false;           // 0.5 sec start delay flag
@@ -173,26 +170,24 @@ void loop() {
     timeUp120 = false;
   }
 
-  // COLOUR CODE
-  //=================================================================================================================================
+  // COLOUR SENSOR CODE
   digitalWrite(cTCSLED, !digitalRead(cLEDSwitch));             // turn on onboard LED if switch state is low (on position)
   if (tcsFlag) {                                               // if colour sensor initialized
     tcs.getRawData(&r, &g, &b, &c);                            // get raw RGBC values
     Serial.printf("R: %d, G: %d, B: %d, C %d\n", r, g, b, c);  // uncomment to print rgbc values
 
-    // if the sense gem is green, move the servo to the left and reset the past time var
+    // If the sense gem is green, move the servo to the left and reset the past time var
     if ((r >= rLow && r <= rHigh) && (g >= gLow && g <= gHigh) && (b >= bLow && b <= bHigh) && (c >= cLow && c <= cHigh) && (g - b > 4) && (g > r) && (g > b)) {
-      Serial.println("GREEN===============================================");
+      // Serial.println("GREEN===============================================");
       ledcWrite(cServoChannel, cSorterServoLeft);
       pastTime = millis();
     } else {
-      //if its been more than 600ms since the servo was moved to the left and no green gem is sensed, move servoback to right pos
+      // If its been more than 600ms since the servo was moved to the left and no green gem is sensed, move servoback to right pos
       if ((millis() - pastTime) > 600) {
         ledcWrite(cServoChannel, cSorterServoRight);
       }
     }
   }
-  //=================================================================================================================================
 
   int pot = 0;  // raw ADC value from pot
 
@@ -399,7 +394,6 @@ void loop() {
               tc3 = 0;             // reset timer count
               tc3Up = false;       // reset timer flag
             }
-
             break;
         }
         break;
@@ -447,6 +441,6 @@ void mapPosition(int potPos) {
   ledcWrite(cServoChannel, position);                                  // set servo pos
 
   // print pos data
-  Serial.println("PotPos: ");
+  Serial.println("Pot Position: ");
   Serial.println(position);
 }
